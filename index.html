@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gunzalez Price Tracker</title>
+<meta name="description" content="Lowest gun and ammo prices, checked every night: cost per round for 61 calibers and low prices on 143 popular guns.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: ammo-box end label header, then a dense price ledger; item view = stamped label + chart + deal + alert */
+:root {
+  --bg: #ECEEE9; --surface: #FBFBF8; --ink: #1B211E; --muted: #5C6660; --line: #CDD3CC;
+  --brass: #9A6A12; --brass-soft: #F1E3C2; --down: #2D7A4C; --up: #B03F2C; --olive: #3C4A3F; --olive-ink: #F2F0E6;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111513; --surface: #181E1B; --ink: #E6E9E2; --muted: #98A39C; --line: #2B3430;
+  --brass: #D8A443; --brass-soft: #3A2E15; --down: #5DBE87; --up: #E37D67; --olive: #26302A; --olive-ink: #ECE8D8; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111513; --surface: #181E1B; --ink: #E6E9E2; --muted: #98A39C; --line: #2B3430;
+  --brass: #D8A443; --brass-soft: #3A2E15; --down: #5DBE87; --up: #E37D67; --olive: #26302A; --olive-ink: #ECE8D8; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px }
+.wrap { max-width: 1040px; margin: 0 auto }
+a { color: inherit }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; border-bottom: 2px solid var(--ink); flex-wrap: wrap }
+.brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none }
+.brand b { font: 900 30px/1 var(--display); letter-spacing: .02em; text-transform: uppercase }
+.brand span { font: 600 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--brass) }
+nav { display: flex; gap: 18px; font-size: 14px; font-weight: 500 }
+nav a { text-decoration: none; color: var(--muted) } nav a:hover, nav a[aria-current] { color: var(--ink) }
+.hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px; padding-block: 28px 20px; align-items: end }
+.hero h1 { font: 800 clamp(40px, 7vw, 68px)/.92 var(--display); text-transform: uppercase; margin: 0; text-wrap: balance }
+.hero p { margin: 12px 0 0; color: var(--muted); max-width: 52ch }
+.label { background: var(--olive); color: var(--olive-ink); padding: 16px 18px; border-radius: 3px; display: grid; gap: 6px }
+.label .k { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .75 }
+.label .v { font: 800 44px/1 var(--display) } .label .v small { font: 600 16px var(--mono); margin-left: 4px }
+.label .s { font: 13px/1.4 var(--body); opacity: .85 }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-block: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5 }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+.seg { display: flex; flex-wrap: wrap; gap: 6px }
+.seg button { font: 500 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 7px 12px; border-radius: 999px; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+input[type=search], input[type=email], input[type=number], select { font: 14px var(--body); padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); min-width: 0 }
+#q { flex: 1 1 200px }
+.chk { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted) }
+.tablewrap { overflow-x: auto }
+table { width: 100%; border-collapse: collapse; margin-top: 6px }
+th { text-align: left; font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 10px; border-bottom: 1px solid var(--line); white-space: nowrap }
+td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle }
+tr.row { cursor: pointer } tr.row:hover td { background: var(--surface) }
+td.name a { font-weight: 600; text-decoration: none } td.name small { display: block; color: var(--muted); font-size: 12px }
+td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+th.num { text-align: right }
+.star { color: var(--brass); font-size: 12px; margin-left: 4px }
+.none { color: var(--muted); font-family: var(--mono); font-size: 13px }
+.chip { display: inline-block; font: 600 11px/1 var(--mono); padding: 4px 7px; border-radius: 3px; background: var(--brass-soft); color: var(--brass); white-space: nowrap }
+.chip.down { background: transparent; color: var(--down); border: 1px solid var(--down) } .chip.up { background: transparent; color: var(--up); border: 1px solid var(--up) }
+.count { font: 13px var(--mono); color: var(--muted); padding-block: 10px }
+.deals { padding-block: 4px 22px } .deals h2 { font: 800 24px/1 var(--display); text-transform: uppercase; margin: 0 0 12px }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px }
+.deal { display: grid; gap: 4px; align-content: start; padding: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); text-decoration: none; min-width: 0 }
+.deal:hover { border-color: var(--brass) }
+.dk { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
+.dn { font: 800 22px/1.05 var(--display); text-transform: uppercase }
+.dv { font-size: 18px; font-weight: 600; color: var(--brass) }
+.dt { font-size: 12px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+/* item view */
+.back { display: inline-block; margin-top: 18px; font-size: 14px; color: var(--muted); text-decoration: none }
+.item { display: grid; grid-template-columns: 1fr 340px; gap: 24px; padding-top: 14px }
+.item > * { min-width: 0 }
+.stamp { border: 2px solid var(--ink); border-radius: 4px; padding: 18px 20px; background: var(--surface); display: grid; gap: 10px }
+.stamp .top { display: flex; justify-content: space-between; gap: 12px; font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted) }
+.stamp h1 { font: 900 clamp(40px, 8vw, 72px)/.9 var(--display); text-transform: uppercase; margin: 0; text-wrap: balance }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px dashed var(--line); padding-top: 12px }
+.stats div { display: grid; gap: 4px } .stats div + div { border-left: 1px dashed var(--line); padding-left: 14px }
+.stats .k { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
+.stats .v { font: 800 30px/1 var(--display) } .stats .v small { font: 500 13px var(--mono); color: var(--muted); margin-left: 3px }
+.chart { margin-top: 18px } .chart h2, aside h2 { font: 800 22px/1 var(--display); text-transform: uppercase; margin: 0 0 10px; letter-spacing: .02em }
+.chart svg { width: 100%; height: auto; display: block }
+.note { font-size: 13px; color: var(--muted); margin: 8px 0 0 }
+aside { display: grid; gap: 16px; align-content: start }
+.card { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 16px }
+.deal-title { font-weight: 600; margin: 0 0 6px }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 14px var(--body); background: var(--brass); color: #fff; border: 0; border-radius: 6px; padding: 11px 16px; text-decoration: none; cursor: pointer; width: 100% }
+:root:not([data-theme="light"]) .btn { color: #fff }
+form.alert { display: grid; gap: 10px } form.alert label { display: grid; gap: 4px; font-size: 13px; font-weight: 500 }
+.msg { font-size: 13px; margin: 0 } .msg.ok { color: var(--down) } .msg.err { color: var(--up) }
+.fine { font-size: 12px; color: var(--muted) }
+footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 12px; color: var(--muted); max-width: 80ch }
+.files { padding-block: 24px } .files h1 { font: 800 44px/1 var(--display); text-transform: uppercase; margin: 0 0 8px }
+@media (max-width: 760px) { .hero, .item { grid-template-columns: 1fr } .hide-s { display: none } }
+@media (prefers-reduced-motion: no-preference) { tr.row td { transition: background .12s } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#tracker"><b>Gunzalez</b><span>Price Tracker</span></a>
+    <nav aria-label="Main">
+      <a href="#tracker" id="nav-tracker">Prices</a>
+      <a href="#alerts" id="nav-alerts">Price alerts</a>
+      <a href="#files" id="nav-files">3D files</a>
+    </nav>
+  </header>
+
+  <main id="view"></main>
+
+  <footer>
+    <div>Prices come from public deal posts and are checked every night around 8:47pm Central. Prices change fast, so confirm on the store's page before you buy.</div>
+    <div>Some links are affiliate links: I may earn a commission at no extra cost to you. I don't sell guns. Firearms ship to a licensed FFL dealer and go through a background check. You must be 21+ and legally allowed to buy where you live.</div>
+    <div>Run by @gunzalezserg · Dallas, TX</div>
+  </footer>
+</div>
+
+<script>
+const WEBHOOK = 'https://perfectly-deranged-masses.ngrok-free.dev/webhook/gun-finder-survey-k7q2';
+const TYPES = ['All', 'Ammo', 'Handgun', 'Rifle', 'Shotgun', 'Rimfire'];
+const state = { type: 'All', q: '', priced: true };
+let DATA = { items: [], history: [], updated: '' };
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtUSD = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+const isAmmo = it => it.type === 'Ammo';
+const histOf = name => DATA.history.filter(h => h.item === name).sort((a, b) => a.date < b.date ? -1 : 1);
+const valOf = (it, h) => isAmmo(it) ? h.cpr : h.low;
+function trend(it) {
+  const hs = histOf(it.name); if (hs.length < 3) return null;
+  const now = valOf(it, hs[hs.length - 1]); const prev = hs.slice(-15, -1).map(h => valOf(it, h)).filter(v => v != null);
+  if (!prev.length) return null; const avg = prev.reduce((a, b) => a + b, 0) / prev.length; return (now - avg) / avg;
+}
+function chipFor(t) {
+  if (t == null) return '<span class="chip">new</span>';
+  if (t < -0.05) return '<span class="chip down">▼ ' + Math.round(-t * 100) + '%</span>';
+  if (t > 0.05) return '<span class="chip up">▲ ' + Math.round(t * 100) + '%</span>';
+  return '<span class="chip">steady</span>';
+}
+function setNav(id) { document.querySelectorAll('nav a').forEach(a => a.toggleAttribute('aria-current', a.id === id)); }
+
+function renderTracker() {
+  setNav('nav-tracker');
+  const priced = DATA.items.filter(it => histOf(it.name).length);
+  const nine = histOf('9mm').slice(-1)[0];
+  const upd = DATA.updated ? new Date(DATA.updated).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' }) + ' CT' : '';
+  $('#view').innerHTML = `
+  <section class="hero">
+    <div>
+      <h1>Gun &amp; ammo prices, checked every night</h1>
+      <p>Cost per round for ${DATA.items.filter(isAmmo).length} calibers and the lowest price on ${DATA.items.filter(i => !isAmmo(i)).length} popular guns. Each night's low gets saved, so you can see if today's price is actually a deal.</p>
+    </div>
+    <div class="label" aria-label="9mm today">
+      <span class="k">9mm · cheapest per round today</span>
+      <span class="v mono">${nine ? nine.cpr : '–'}<small>¢/rd</small></span>
+      <span class="s">${nine ? esc(nine.best) : 'No 9mm deal with a round count today.'}</span>
+    </div>
+  </section>
+  <section class="deals" aria-labelledby="deals-h">
+    <h2 id="deals-h">Tonight's best deals</h2>
+    <div class="dgrid">${DATA.items.filter(it => it.focus && histOf(it.name).length).sort((a, b) => isAmmo(b) - isAmmo(a)).slice(0, 8).map(it => { const h = histOf(it.name).slice(-1)[0]; return `<a class="deal" href="#${it.slug}"><span class="dk">${esc(isAmmo(it) ? it.group + ' ammo' : it.type)}</span><span class="dn">${esc(it.name)}</span><span class="dv mono">${isAmmo(it) ? h.cpr + '¢/rd' : fmtUSD(h.low)}</span><span class="dt">${esc(h.best)}</span></a>`; }).join('')}</div>
+  </section>
+  <div class="controls" role="search">
+    <div class="seg" id="types">${TYPES.map(t => `<button type="button" data-t="${t}" aria-pressed="${state.type === t}">${t === 'All' ? 'All' : t === 'Ammo' ? 'Ammo' : t + 's'}</button>`).join('')}</div>
+    <input type="search" id="q" placeholder="Search: 9mm, Glock 19, P365…" value="${esc(state.q)}" aria-label="Search items">
+    <label class="chk"><input type="checkbox" id="priced" ${state.priced ? 'checked' : ''}> Priced today only</label>
+  </div>
+  <div class="count mono" id="count"></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Item</th><th class="num">Today's low</th><th class="num hide-s">Deals</th><th class="num">vs 2-wk avg</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+  <p class="note">Updated ${esc(upd)} · ${priced.length} of ${DATA.items.length} items had a price today. Items without a deal today keep their history.</p>`;
+  $('#types').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.type = b.dataset.t; document.querySelectorAll('#types button').forEach(x => x.setAttribute('aria-pressed', x === b)); drawRows(); });
+  $('#q').addEventListener('input', e => { state.q = e.target.value; drawRows(); });
+  $('#priced').addEventListener('change', e => { state.priced = e.target.checked; drawRows(); });
+  drawRows();
+}
+function drawRows() {
+  const q = state.q.trim().toLowerCase();
+  let list = DATA.items.filter(it => (state.type === 'All' || it.type === state.type) && (!q || (it.name + ' ' + it.group).toLowerCase().includes(q)));
+  if (state.priced) list = list.filter(it => histOf(it.name).length);
+  list.sort((a, b) => (b.focus - a.focus) || (isAmmo(b) - isAmmo(a)) || a.name.localeCompare(b.name));
+  $('#count').textContent = list.length + (list.length === 1 ? ' item' : ' items');
+  $('#rows').innerHTML = list.map(it => {
+    const h = histOf(it.name).slice(-1)[0];
+    const price = h ? (isAmmo(it) ? `${h.cpr}¢/rd` : fmtUSD(h.low)) : '<span class="none">no deal today</span>';
+    return `<tr class="row" data-s="${it.slug}"><td class="name"><a href="#${it.slug}">${esc(it.name)}</a>${it.focus ? '<span class="star" title="Popular">★</span>' : ''}<small>${esc(isAmmo(it) ? it.group + ' ammo' : it.group + ' · ' + it.type)}</small></td>
+      <td class="num">${price}</td><td class="num hide-s">${h ? h.deals : ''}</td><td class="num">${h ? chipFor(trend(it)) : ''}</td></tr>`;
+  }).join('') || `<tr><td colspan="4" class="none">Nothing matches. Untick "Priced today only" to see every tracked item.</td></tr>`;
+}
+document.addEventListener('click', e => { const r = e.target.closest('tr.row'); if (r && !e.target.closest('a')) location.hash = r.dataset.s; });
+
+function chartSVG(it, hs) {
+  const W = 640, H = 220, L = 48, R = 16, T = 16, B = 30;
+  const vals = hs.map(h => valOf(it, h));
+  if (!vals.length) return '<p class="note">No price recorded yet. This fills in the first night a deal shows up.</p>';
+  let lo = Math.min(...vals), hi = Math.max(...vals); if (lo === hi) { lo = lo * 0.8; hi = hi * 1.2; }
+  const pad = (hi - lo) * 0.1; lo = Math.max(0, lo - pad); hi += pad;
+  const x = i => hs.length === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (hs.length - 1);
+  const y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  const fmt = v => isAmmo(it) ? (Math.round(v * 10) / 10) + '¢' : '$' + Math.round(v);
+  const ticks = [lo, (lo + hi) / 2, hi];
+  const pts = vals.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  const area = hs.length > 1 ? `<polygon points="${x(0)},${H - B} ${pts} ${x(vals.length - 1)},${H - B}" fill="var(--brass-soft)" opacity=".7"/>` : '';
+  const line = hs.length > 1 ? `<polyline points="${pts}" fill="none" stroke="var(--brass)" stroke-width="2.5" stroke-linejoin="round"/>` : '';
+  const last = vals.length - 1;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(it.name)} price history">
+    ${ticks.map(t => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">${fmt(t)}</text>`).join('')}
+    ${area}${line}
+    <circle cx="${x(last)}" cy="${y(vals[last])}" r="5" fill="var(--brass)" stroke="var(--surface)" stroke-width="2"/>
+    <text x="${x(0)}" y="${H - 8}" text-anchor="${hs.length === 1 ? 'middle' : 'start'}" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">${hs[0].date}</text>
+    ${hs.length > 1 ? `<text x="${x(last)}" y="${H - 8}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">${hs[last].date}</text>` : ''}
+  </svg>`;
+}
+function renderItem(it) {
+  setNav('');
+  const hs = histOf(it.name); const h = hs.slice(-1)[0];
+  const allLow = hs.length ? Math.min(...hs.map(x => valOf(it, x))) : null;
+  const unit = isAmmo(it) ? '¢/rd' : '';
+  const show = v => v == null ? '–' : (isAmmo(it) ? v : fmtUSD(v).replace('$', ''));
+  $('#view').innerHTML = `
+  <a class="back" href="#tracker">← All prices</a>
+  <div class="item">
+    <div>
+      <section class="stamp">
+        <div class="top"><span>${esc(isAmmo(it) ? it.group + ' ammunition' : it.group + ' · ' + it.type)}</span><span>${it.focus ? '★ popular' : 'tracked'}</span></div>
+        <h1>${esc(it.name)}</h1>
+        <div class="stats">
+          <div><span class="k">Today's low</span><span class="v mono">${h ? (isAmmo(it) ? '' : '$') + show(valOf(it, h)) : '–'}<small>${h ? unit : ''}</small></span></div>
+          <div><span class="k">Lowest seen</span><span class="v mono">${allLow != null ? (isAmmo(it) ? '' : '$') + show(allLow) : '–'}<small>${allLow != null ? unit : ''}</small></span></div>
+          <div><span class="k">Days tracked</span><span class="v mono">${hs.length}</span></div>
+        </div>
+      </section>
+      <section class="chart">
+        <h2>Price history</h2>
+        ${chartSVG(it, hs)}
+        <p class="note">${isAmmo(it) ? 'Cheapest cost per round each night, from deals that list a round count.' : 'Lowest listed price each night for this model.'} History started Nov 3, 2026; one point is added every night.</p>
+      </section>
+    </div>
+    <aside>
+      <div class="card">
+        <h2>Best deal today</h2>
+        ${h ? `<p class="deal-title">${esc(h.best)}</p><p class="fine mono">${isAmmo(it) ? h.cpr + '¢ a round · ' : ''}${fmtUSD(h.low)} · ${h.deals} deal${h.deals > 1 ? 's' : ''} found</p>
+        <a class="btn" href="${esc(h.link)}" target="_blank" rel="sponsored nofollow noopener">See the deal</a>` : '<p class="fine">No deal posted today. Set an alert and you will hear about the next one.</p>'}
+      </div>
+      <div class="card">${alertForm(it)}</div>
+    </aside>
+  </div>`;
+  bindAlert(it);
+}
+function alertForm(it) {
+  const ammo = !it || isAmmo(it);
+  return `<h2>Price alert</h2>
+  <form class="alert" id="af" novalidate>
+    ${it ? '' : `<label for="af-item">What to watch<select id="af-item">${DATA.items.map(x => `<option value="${x.slug}">${esc(x.name)}</option>`).join('')}</select></label>`}
+    <label for="af-target" id="af-tl">${ammo ? 'Email me at or under (¢ per round)' : 'Email me at or under ($)'}<input id="af-target" type="number" inputmode="decimal" min="1" step="${ammo ? '0.5' : '10'}" placeholder="${ammo ? '22' : '450'}"></label>
+    <label for="af-email">Email<input id="af-email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+    <label class="chk" for="af-age"><input id="af-age" type="checkbox"> I'm 21+ and can legally buy where I live.</label>
+    <button class="btn" type="submit" id="af-go">Set alert</button>
+    <p class="msg" id="af-msg" role="status"></p>
+  </form>`;
+}
+function bindAlert(fixed) {
+  const f = $('#af'); if (!f) return;
+  const pickItem = () => fixed || DATA.items.find(x => x.slug === $('#af-item').value);
+  const sync = () => { const it = pickItem(); const ammo = isAmmo(it); $('#af-tl').firstChild.textContent = ammo ? 'Email me at or under (¢ per round)' : 'Email me at or under ($)'; $('#af-target').placeholder = ammo ? '22' : '450'; };
+  if (!fixed) $('#af-item').addEventListener('change', sync);
+  f.addEventListener('submit', async e => {
+    e.preventDefault(); const msg = $('#af-msg'); msg.className = 'msg';
+    const it = pickItem(); const target = $('#af-target').value; const email = $('#af-email').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = 'msg err'; msg.textContent = 'Enter your email so the alert has somewhere to go.'; return; }
+    if (!(Number(target) > 0)) { msg.className = 'msg err'; msg.textContent = 'Enter the price you want to be told about.'; return; }
+    if (!$('#af-age').checked) { msg.className = 'msg err'; msg.textContent = 'Tick the 21+ box to set an alert.'; return; }
+    const ammo = isAmmo(it);
+    const body = { email, category: ammo ? 'Ammo' : it.type, model: ammo ? '' : it.name, caliber: ammo ? it.name : '', cpr: ammo ? target : '', budget: ammo ? '' : target, condition: 'Either', soon: 'Just watching', state: '', age: true, consent: true, source: 'site-' + it.slug };
+    $('#af-go').disabled = true;
+    try {
+      const r = await fetch(WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }, body: JSON.stringify(body) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.ok === false) throw new Error(j.error || 'failed');
+      msg.className = 'msg ok'; msg.textContent = `Alert set. You'll get an email when ${it.name} hits ${ammo ? target + '¢ a round' : '$' + target} or less.`;
+    } catch (x) { msg.className = 'msg err'; msg.textContent = 'Alerts open when the site goes live. Nothing was saved from this preview.'; }
+    finally { $('#af-go').disabled = false; }
+  });
+}
+function renderAlerts() {
+  setNav('nav-alerts');
+  $('#view').innerHTML = `<section class="files"><h1>Price alerts</h1><p class="note" style="max-width:60ch">Pick a caliber or a gun and the price you'd buy at. When a deal at or under your price shows up, you get an email. One click unsubscribes.</p></section><div class="card" style="max-width:420px">${alertForm(null)}</div>`;
+  bindAlert(null);
+}
+function renderFiles() {
+  setNav('nav-files');
+  $('#view').innerHTML = `<section class="files"><h1>3D files</h1><p class="note" style="max-width:60ch">Search printable holsters, mag carriers, mounts, ammo boxes and range gear across Printables, Thingiverse, MakerWorld and Cults, plus my own designs. Coming soon.</p></section>`;
+}
+function route() {
+  const h = location.hash.slice(1);
+  const it = DATA.items.find(x => x.slug === h);
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files') renderFiles(); else renderTracker();
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+fetch('data/prices.json').then(r => r.json()).then(d => { DATA = d; route(); }).catch(() => { $('#view').innerHTML = '<p class="note">Prices could not load. Refresh the page to try again.</p>'; });
+</script>
+
+</body>
+</html>
