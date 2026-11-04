@@ -32,7 +32,7 @@ header.top { display: flex; align-items: center; justify-content: space-between;
 .brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none }
 .brand b { font: 900 30px/1 var(--display); letter-spacing: .02em; text-transform: uppercase }
 .brand span { font: 600 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--brass) }
-nav { display: flex; gap: 18px; font-size: 14px; font-weight: 500 }
+nav { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; font-weight: 500 }
 nav a { text-decoration: none; color: var(--muted) } nav a:hover, nav a[aria-current] { color: var(--ink) }
 .hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px; padding-block: 28px 20px; align-items: end }
 .hero h1 { font: 800 clamp(40px, 7vw, 68px)/.92 var(--display); text-transform: uppercase; margin: 0; text-wrap: balance }
@@ -93,6 +93,20 @@ form.alert { display: grid; gap: 10px } form.alert label { display: grid; gap: 4
 .msg { font-size: 13px; margin: 0 } .msg.ok { color: var(--down) } .msg.err { color: var(--up) }
 .fine { font-size: 12px; color: var(--muted) }
 footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 12px; color: var(--muted); max-width: 80ch }
+.af-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px } .af-row > * { min-width: 0 }
+.searchalert { margin-top: 18px; max-width: 560px }
+.vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px }
+.vcard { display: grid; gap: 8px; min-width: 0 } .vmeta h3, .gcard h3, .bcard h3 { font: 800 22px/1.05 var(--display); text-transform: uppercase; margin: 2px 0 0 }
+.vid { max-width: 100%; overflow: hidden } .vid.yt { aspect-ratio: 16 / 9 } .vid.yt iframe { width: 100%; height: 100%; border: 0; border-radius: 6px }
+.vid .instagram-media { min-width: 0 !important; width: 100% !important; margin: 0 !important }
+.gcat { font: 800 24px/1 var(--display); text-transform: uppercase; margin: 22px 0 10px }
+.ggrid, .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px }
+.gcard, .bcard { display: grid; gap: 8px; align-content: start; min-width: 0 } .gcard p, .bcard p { margin: 0 }
+.code { font-size: 13px } .code b { color: var(--brass) }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line) }
+details summary { cursor: pointer; font-weight: 600; font-size: 14px; padding-block: 4px }
+.parts { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px }
+@media (max-width: 480px) { .af-row { grid-template-columns: 1fr } }
 .files { padding-block: 24px } .files h1 { font: 800 44px/1 var(--display); text-transform: uppercase; margin: 0 0 8px }
 @media (max-width: 760px) { .hero, .item { grid-template-columns: 1fr } .hide-s { display: none } }
 @media (prefers-reduced-motion: no-preference) { tr.row td { transition: background .12s } }
@@ -105,7 +119,10 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
     <a class="brand" href="#tracker"><b>Gunzalez</b><span>Price Tracker</span></a>
     <nav aria-label="Main">
       <a href="#tracker" id="nav-tracker">Prices</a>
-      <a href="#alerts" id="nav-alerts">Price alerts</a>
+      <a href="#alerts" id="nav-alerts">Alerts</a>
+      <a href="#videos" id="nav-videos">Videos</a>
+      <a href="#gear" id="nav-gear">Gear</a>
+      <a href="#builds" id="nav-builds">Builds</a>
       <a href="#files" id="nav-files">3D files</a>
     </nav>
   </header>
@@ -167,13 +184,14 @@ function renderTracker() {
   <div class="controls" role="search">
     <div class="seg" id="types">${TYPES.map(t => `<button type="button" data-t="${t}" aria-pressed="${state.type === t}">${t === 'All' ? 'All' : t === 'Ammo' ? 'Ammo' : t + 's'}</button>`).join('')}</div>
     <input type="search" id="q" placeholder="Search: 9mm, Glock 19, P365…" value="${esc(state.q)}" aria-label="Search items">
-    <label class="chk"><input type="checkbox" id="priced" ${state.priced ? 'checked' : ''}> Priced today only</label>
+    <label class="chk"><input type="checkbox" id="priced" ${state.priced ? 'checked' : ''}> Priced today only (search shows everything)</label>
   </div>
   <div class="count mono" id="count"></div>
   <div class="tablewrap"><table>
     <thead><tr><th>Item</th><th class="num">Today's low</th><th class="num hide-s">Deals</th><th class="num">vs 2-wk avg</th></tr></thead>
     <tbody id="rows"></tbody>
   </table></div>
+  <div id="searchAlert"></div>
   <p class="note">Updated ${esc(upd)} · ${priced.length} of ${DATA.items.length} items had a price today. Items without a deal today keep their history.</p>`;
   $('#types').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.type = b.dataset.t; document.querySelectorAll('#types button').forEach(x => x.setAttribute('aria-pressed', x === b)); drawRows(); });
   $('#q').addEventListener('input', e => { state.q = e.target.value; drawRows(); });
@@ -183,7 +201,7 @@ function renderTracker() {
 function drawRows() {
   const q = state.q.trim().toLowerCase();
   let list = DATA.items.filter(it => (state.type === 'All' || it.type === state.type) && (!q || (it.name + ' ' + it.group).toLowerCase().includes(q)));
-  if (state.priced) list = list.filter(it => histOf(it.name).length);
+  if (state.priced && !q) list = list.filter(it => histOf(it.name).length);
   list.sort((a, b) => (b.focus - a.focus) || (isAmmo(b) - isAmmo(a)) || a.name.localeCompare(b.name));
   $('#count').textContent = list.length + (list.length === 1 ? ' item' : ' items');
   $('#rows').innerHTML = list.map(it => {
@@ -191,7 +209,13 @@ function drawRows() {
     const price = h ? (isAmmo(it) ? `${h.cpr}¢/rd` : fmtUSD(h.low)) : '<span class="none">no deal today</span>';
     return `<tr class="row" data-s="${it.slug}"><td class="name"><a href="#${it.slug}">${esc(it.name)}</a>${it.focus ? '<span class="star" title="Popular">★</span>' : ''}<small>${esc(isAmmo(it) ? it.group + ' ammo' : it.group + ' · ' + it.type)}</small></td>
       <td class="num">${price}</td><td class="num hide-s">${h ? h.deals : ''}</td><td class="num">${h ? chipFor(trend(it)) : ''}</td></tr>`;
-  }).join('') || `<tr><td colspan="4" class="none">Nothing matches. Untick "Priced today only" to see every tracked item.</td></tr>`;
+  }).join('') || `<tr><td colspan="4" class="none">Not on the tracker yet. Set an alert below and I'll watch the deal feeds for it anyway.</td></tr>`;
+  const box = $('#searchAlert');
+  if (!q) { box.innerHTML = ''; return; }
+  const exact = list.length === 1 ? list[0] : DATA.items.find(it => it.name.toLowerCase() === q);
+  const ammo = exact ? isAmmo(exact) : (list.length && list.every(isAmmo));
+  box.innerHTML = `<div class="card searchalert">${alertForm({ name: exact ? exact.name : state.q.trim(), ammo, type: exact ? exact.type : (ammo ? 'Ammo' : ''), title: 'Get an email when ' + esc(exact ? exact.name : state.q.trim()) + ' drops' })}</div>`;
+  bindAlert();
 }
 document.addEventListener('click', e => { const r = e.target.closest('tr.row'); if (r && !e.target.closest('a')) location.hash = r.dataset.s; });
 
@@ -248,50 +272,106 @@ function renderItem(it) {
         ${h ? `<p class="deal-title">${esc(h.best)}</p><p class="fine mono">${isAmmo(it) ? h.cpr + '¢ a round · ' : ''}${fmtUSD(h.low)} · ${h.deals} deal${h.deals > 1 ? 's' : ''} found</p>
         <a class="btn" href="${esc(h.link)}" target="_blank" rel="sponsored nofollow noopener">See the deal</a>` : '<p class="fine">No deal posted today. Set an alert and you will hear about the next one.</p>'}
       </div>
-      <div class="card">${alertForm(it)}</div>
+      <div class="card">${alertForm({ name: it.name, ammo: isAmmo(it), type: it.type, title: 'Price alert' })}</div>
     </aside>
   </div>`;
-  bindAlert(it);
+  bindAlert();
 }
-function alertForm(it) {
-  const ammo = !it || isAmmo(it);
-  return `<h2>Price alert</h2>
-  <form class="alert" id="af" novalidate>
-    ${it ? '' : `<label for="af-item">What to watch<select id="af-item">${DATA.items.map(x => `<option value="${x.slug}">${esc(x.name)}</option>`).join('')}</select></label>`}
-    <label for="af-target" id="af-tl">${ammo ? 'Email me at or under (¢ per round)' : 'Email me at or under ($)'}<input id="af-target" type="number" inputmode="decimal" min="1" step="${ammo ? '0.5' : '10'}" placeholder="${ammo ? '22' : '450'}"></label>
+function alertForm(o) {
+  o = o || {};
+  const ammo = !!o.ammo;
+  return `<h2>${o.title || 'Price alert'}</h2>
+  <form class="alert" id="af" novalidate data-type="${esc(o.type || '')}">
+    <label for="af-item">Gun, caliber or model
+      <input id="af-item" list="af-list" value="${esc(o.name || '')}" placeholder="Taurus TX22, 9mm, Glock 19 Gen 5" autocomplete="off">
+      <datalist id="af-list">${DATA.items.map(x => `<option value="${esc(x.name)}"></option>`).join('')}</datalist>
+    </label>
+    <div class="af-row">
+      <label for="af-target" id="af-tl">${ammo ? 'At or under (¢ per round)' : 'At or under ($)'}<input id="af-target" type="number" inputmode="decimal" min="1" step="${ammo ? '0.5' : '10'}" placeholder="${ammo ? '22' : '450'}"></label>
+      <label for="af-upc" id="af-ul"${ammo ? ' hidden' : ''}>UPC or SKU <span class="fine">(optional)</span><input id="af-upc" inputmode="text" maxlength="40" placeholder="764503913617"></label>
+    </div>
     <label for="af-email">Email<input id="af-email" type="email" autocomplete="email" placeholder="you@example.com"></label>
     <label class="chk" for="af-age"><input id="af-age" type="checkbox"> I'm 21+ and can legally buy where I live.</label>
-    <button class="btn" type="submit" id="af-go">Set alert</button>
+    <button class="btn" type="submit" id="af-go">Email me when it drops</button>
     <p class="msg" id="af-msg" role="status"></p>
+    <p class="fine">The UPC is the barcode number on the box; the SKU is the maker's part number. Either one pins down the exact version you want.</p>
   </form>`;
 }
-function bindAlert(fixed) {
+function bindAlert() {
   const f = $('#af'); if (!f) return;
-  const pickItem = () => fixed || DATA.items.find(x => x.slug === $('#af-item').value);
-  const sync = () => { const it = pickItem(); const ammo = isAmmo(it); $('#af-tl').firstChild.textContent = ammo ? 'Email me at or under (¢ per round)' : 'Email me at or under ($)'; $('#af-target').placeholder = ammo ? '22' : '450'; };
-  if (!fixed) $('#af-item').addEventListener('change', sync);
+  const findItem = () => { const v = $('#af-item').value.trim().toLowerCase(); return DATA.items.find(x => x.name.toLowerCase() === v); };
+  const isAmmoNow = () => { const it = findItem(); if (it) return isAmmo(it); if (f.dataset.type) return f.dataset.type === 'Ammo'; return /\b(mm|acp|ga|gauge|lr|wmr|hmr|blk|nato|win|mag|special|creedmoor|grain|ammo)\b/i.test($('#af-item').value) && !/\b(glock|sig|ruger|taurus|smith|s&w|springfield|cz|canik|walther|beretta|hk)\b/i.test($('#af-item').value); };
+  const sync = () => { const ammo = isAmmoNow(); $('#af-tl').firstChild.textContent = ammo ? 'At or under (¢ per round)' : 'At or under ($)'; $('#af-target').placeholder = ammo ? '22' : '450'; $('#af-target').step = ammo ? '0.5' : '10'; $('#af-ul').hidden = ammo; };
+  $('#af-item').addEventListener('input', () => { f.dataset.type = ''; sync(); });
+  sync();
   f.addEventListener('submit', async e => {
     e.preventDefault(); const msg = $('#af-msg'); msg.className = 'msg';
-    const it = pickItem(); const target = $('#af-target').value; const email = $('#af-email').value.trim();
+    const what = $('#af-item').value.trim(); const it = findItem(); const ammo = isAmmoNow();
+    const target = $('#af-target').value; const email = $('#af-email').value.trim(); const upc = ammo ? '' : $('#af-upc').value.trim();
+    if (!what && !upc) { msg.className = 'msg err'; msg.textContent = 'Type the gun, caliber or UPC you want to watch.'; return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = 'msg err'; msg.textContent = 'Enter your email so the alert has somewhere to go.'; return; }
-    if (!(Number(target) > 0)) { msg.className = 'msg err'; msg.textContent = 'Enter the price you want to be told about.'; return; }
+    if (!(Number(target) > 0) && !upc) { msg.className = 'msg err'; msg.textContent = 'Enter the price you want to be told about.'; return; }
     if (!$('#af-age').checked) { msg.className = 'msg err'; msg.textContent = 'Tick the 21+ box to set an alert.'; return; }
-    const ammo = isAmmo(it);
-    const body = { email, category: ammo ? 'Ammo' : it.type, model: ammo ? '' : it.name, caliber: ammo ? it.name : '', cpr: ammo ? target : '', budget: ammo ? '' : target, condition: 'Either', soon: 'Just watching', state: '', age: true, consent: true, source: 'site-' + it.slug };
+    const name = it ? it.name : what;
+    const body = { email, category: ammo ? 'Ammo' : (it && it.type !== 'Ammo' ? it.type : ''), model: ammo ? '' : name, caliber: ammo ? name : '', upc, cpr: ammo ? target : '', budget: ammo ? '' : target, condition: 'Either', soon: 'Just watching', state: '', age: true, consent: true, source: 'site-' + (it ? it.slug : 'search') };
     $('#af-go').disabled = true;
     try {
       const r = await fetch(WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j.ok === false) throw new Error(j.error || 'failed');
-      msg.className = 'msg ok'; msg.textContent = `Alert set. You'll get an email when ${it.name} hits ${ammo ? target + '¢ a round' : '$' + target} or less.`;
-    } catch (x) { msg.className = 'msg err'; msg.textContent = 'Alerts open when the site goes live. Nothing was saved from this preview.'; }
+      msg.className = 'msg ok'; msg.textContent = `You're set. I'll email ${email} when ${name || upc} hits ${target ? (ammo ? target + '¢ a round' : '$' + target) + ' or less' : 'a deal'}.`;
+    } catch (x) { msg.className = 'msg err'; msg.textContent = 'That didn\'t go through. Try again in a minute.'; }
     finally { $('#af-go').disabled = false; }
   });
 }
 function renderAlerts() {
   setNav('nav-alerts');
-  $('#view').innerHTML = `<section class="files"><h1>Price alerts</h1><p class="note" style="max-width:60ch">Pick a caliber or a gun and the price you'd buy at. When a deal at or under your price shows up, you get an email. One click unsubscribes.</p></section><div class="card" style="max-width:420px">${alertForm(null)}</div>`;
-  bindAlert(null);
+  $('#view').innerHTML = `<section class="files"><h1>Price alerts</h1><p class="note" style="max-width:60ch">Pick a gun or caliber, or paste a UPC, and the price you'd buy at. When a deal at or under it shows up, you get an email. One click unsubscribes.</p></section><div class="card" style="max-width:520px">${alertForm({})}</div>`;
+  bindAlert();
+}
+const embedOf = url => {
+  const u = String(url || '');
+  let m = u.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/);
+  if (m) return `<div class="vid yt"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}" title="YouTube video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+  m = u.match(/instagram\.com\/(?:reel|p)\/([\w-]+)/);
+  if (m) return `<div class="vid ig"><blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/${m[1]}/" data-instgrm-version="14"><a href="https://www.instagram.com/reel/${m[1]}/" target="_blank" rel="noopener">Watch on Instagram</a></blockquote></div>`;
+  return u ? `<a class="btn ghost" href="${esc(u)}" target="_blank" rel="noopener">Watch</a>` : '';
+};
+let igLoaded = false;
+function igProcess() {
+  if (window.instgrm) { window.instgrm.Embeds.process(); return; }
+  if (igLoaded) return; igLoaded = true;
+  const sc = document.createElement('script'); sc.async = true; sc.src = 'https://www.instagram.com/embed.js'; document.body.appendChild(sc);
+}
+function renderVideos() {
+  setNav('nav-videos');
+  const vids = (DATA.content || []);
+  $('#view').innerHTML = `<section class="files"><h1>Videos</h1><p class="note" style="max-width:60ch">Range days, reviews and unboxings from my Instagram and YouTube.</p></section>
+  <div class="vgrid">${vids.map(v => `<article class="vcard">${embedOf(v.url)}<div class="vmeta"><span class="dk">${esc(v.type || v.platform || '')}${v.date ? ' · ' + esc(v.date) : ''}</span><h3>${esc(v.title || '')}</h3></div></article>`).join('') || '<p class="note">Videos show up here once they\'re added.</p>'}</div>
+  <p class="note">More on <a href="https://www.instagram.com/gunzalezserg/" target="_blank" rel="noopener">@gunzalezserg</a>.</p>`;
+  igProcess();
+}
+function renderGear() {
+  setNav('nav-gear');
+  const gear = (DATA.gear || []);
+  const cats = [...new Set(gear.map(g => g.category || 'Other'))];
+  $('#view').innerHTML = `<section class="files"><h1>Gear I use</h1><p class="note" style="max-width:60ch">The stuff I actually run, with my reviews and unboxings. Some links are affiliate links, so buying through them supports the channel at no extra cost to you.</p></section>
+  ${cats.map(c => `<h2 class="gcat">${esc(c)}</h2><div class="ggrid">${gear.filter(g => (g.category || 'Other') === c).map(g => `<article class="card gcard">
+    <span class="dk">${esc(g.brand || '')}</span><h3>${esc(g.product)}</h3>${g.blurb ? `<p>${esc(g.blurb)}</p>` : ''}
+    ${g.code ? `<p class="code">Code <b class="mono">${esc(g.code)}</b></p>` : ''}
+    ${g.link ? `<a class="btn" href="${esc(g.link)}" target="_blank" rel="sponsored nofollow noopener">Get it</a>` : ''}
+    ${g.video ? `<details><summary>Watch my review</summary>${embedOf(g.video)}</details>` : ''}
+  </article>`).join('')}</div>`).join('') || '<p class="note">Gear shows up here once it\'s added.</p>'}`;
+  document.querySelectorAll('details').forEach(d => d.addEventListener('toggle', igProcess, { once: true }));
+}
+function renderBuilds() {
+  setNav('nav-builds');
+  const builds = (DATA.builds || []);
+  $('#view').innerHTML = `<section class="files"><h1>Builds</h1><p class="note" style="max-width:60ch">My full builds with every part I used.</p></section>
+  <div class="bgrid">${builds.map(b => `<article class="card bcard"><div class="bhead"><span class="dk">${esc(b.base || '')}</span><h3>${esc(b.name)}</h3>${b.summary ? `<p>${esc(b.summary)}</p>` : ''}</div>
+    ${(b.parts || []).length ? `<ul class="parts">${b.parts.map(pt => `<li>${pt.link ? `<a href="${esc(pt.link)}" target="_blank" rel="sponsored nofollow noopener">${esc(pt.name)}</a>` : esc(pt.name)}</li>`).join('')}</ul>` : ''}
+    ${b.video ? embedOf(b.video) : ''}</article>`).join('') || '<p class="note">My first full build write-up is coming soon. Follow <a href="https://www.instagram.com/gunzalezserg/" target="_blank" rel="noopener">@gunzalezserg</a> to see it first.</p>'}</div>`;
+  igProcess();
 }
 function renderFiles() {
   setNav('nav-files');
@@ -300,7 +380,7 @@ function renderFiles() {
 function route() {
   const h = location.hash.slice(1);
   const it = DATA.items.find(x => x.slug === h);
-  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files') renderFiles(); else renderTracker();
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files') renderFiles(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else renderTracker();
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
