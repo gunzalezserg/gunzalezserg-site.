@@ -1,6 +1,8 @@
 # gunzalezserg.com
 
-Gun and ammo price tracker by @gunzalezserg. Static site hosted on Cloudflare Pages.
+Gun and ammo price tracker by @gunzalezserg. Cloudflare Pages (built from this repo) + a Cloudflare D1 database.
 
-- `index.html` — the whole site (price list, one page per tracked item, price alerts, 3D files).
-- `data/prices.json` — tracked items and nightly price history. Written every night by the n8n "Gun Finder: Price Tracker" workflow. Don't edit by hand.
+- `public/index.html` — the site (prices, item pages, alerts, deal checker, videos, gear, builds).
+- `public/data/prices.json` — tracked items, nightly price history, videos, gear, builds. Written nightly by n8n. Don't edit by hand.
+- `functions/api/search.js` — `/api/search?q=` searches every store listing in the D1 database `gunzalezserg-prices`.
+- `wrangler.toml` — Pages config: output folder `public`, D1 binding `DB`.

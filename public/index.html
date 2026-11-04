@@ -107,6 +107,11 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
 details summary { cursor: pointer; font-weight: 600; font-size: 14px; padding-block: 4px }
 .parts { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px }
 @media (max-width: 480px) { .af-row { grid-template-columns: 1fr } }
+.stores { margin-top: 22px } .stores h2 { font: 800 22px/1 var(--display); text-transform: uppercase; margin: 0 0 6px }
+td.num small { display: block; color: var(--muted); font-size: 11px }
+a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; white-space: nowrap } a.go:hover { text-decoration: underline }
+.tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start }
+.verdict { margin-top: 12px } .verdict p { margin: 4px 0 } .verdict .big { font-size: 20px }
 .files { padding-block: 24px } .files h1 { font: 800 44px/1 var(--display); text-transform: uppercase; margin: 0 0 8px }
 @media (max-width: 760px) { .hero, .item { grid-template-columns: 1fr } .hide-s { display: none } }
 @media (prefers-reduced-motion: no-preference) { tr.row td { transition: background .12s } }
@@ -120,6 +125,7 @@ details summary { cursor: pointer; font-weight: 600; font-size: 14px; padding-bl
     <nav aria-label="Main">
       <a href="#tracker" id="nav-tracker">Prices</a>
       <a href="#alerts" id="nav-alerts">Alerts</a>
+      <a href="#tools" id="nav-tools">Deal checker</a>
       <a href="#videos" id="nav-videos">Videos</a>
       <a href="#gear" id="nav-gear">Gear</a>
       <a href="#builds" id="nav-builds">Builds</a>
@@ -191,6 +197,7 @@ function renderTracker() {
     <thead><tr><th>Item</th><th class="num">Today's low</th><th class="num hide-s">Deals</th><th class="num">vs 2-wk avg</th></tr></thead>
     <tbody id="rows"></tbody>
   </table></div>
+  <div id="storeResults"></div>
   <div id="searchAlert"></div>
   <p class="note">Updated ${esc(upd)} · ${priced.length} of ${DATA.items.length} items had a price today. Items without a deal today keep their history.</p>`;
   $('#types').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.type = b.dataset.t; document.querySelectorAll('#types button').forEach(x => x.setAttribute('aria-pressed', x === b)); drawRows(); });
@@ -211,6 +218,7 @@ function drawRows() {
       <td class="num">${price}</td><td class="num hide-s">${h ? h.deals : ''}</td><td class="num">${h ? chipFor(trend(it)) : ''}</td></tr>`;
   }).join('') || `<tr><td colspan="4" class="none">Not on the tracker yet. Set an alert below and I'll watch the deal feeds for it anyway.</td></tr>`;
   const box = $('#searchAlert');
+  storeSearch(q, '#storeResults');
   if (!q) { box.innerHTML = ''; return; }
   const exact = list.length === 1 ? list[0] : DATA.items.find(it => it.name.toLowerCase() === q);
   const ammo = exact ? isAmmo(exact) : (list.length && list.every(isAmmo));
@@ -263,6 +271,7 @@ function renderItem(it) {
       <section class="chart">
         <h2>Price history</h2>
         ${chartSVG(it, hs)}
+        <div id="itemStores"></div>
         <p class="note">${isAmmo(it) ? 'Cheapest cost per round each night, from deals that list a round count.' : 'Lowest listed price each night for this model.'} History started Nov 3, 2026; one point is added every night.</p>
       </section>
     </div>
@@ -276,6 +285,7 @@ function renderItem(it) {
     </aside>
   </div>`;
   bindAlert();
+  ssLast = ''; storeSearch(it.name.split('/')[0].replace(/\(.*?\)/g, '').trim(), '#itemStores', { now: true });
 }
 function alertForm(o) {
   o = o || {};
@@ -373,6 +383,81 @@ function renderBuilds() {
     ${b.video ? embedOf(b.video) : ''}</article>`).join('') || '<p class="note">My first full build write-up is coming soon. Follow <a href="https://www.instagram.com/gunzalezserg/" target="_blank" rel="noopener">@gunzalezserg</a> to see it first.</p>'}</div>`;
   igProcess();
 }
+
+let ssTimer = null, ssLast = '';
+function storeSearch(q, sel, opts) {
+  const el = $(sel); if (!el) return;
+  clearTimeout(ssTimer);
+  if (!q || q.length < 2) { el.innerHTML = ''; ssLast = ''; return; }
+  ssTimer = setTimeout(async () => {
+    if (q === ssLast && !(opts && opts.force)) return; ssLast = q;
+    el.innerHTML = '<p class="note">Searching every store…</p>';
+    try {
+      const r = await fetch('/api/search?q=' + encodeURIComponent(q) + '&days=30');
+      const j = await r.json();
+      const rows = (j.results || []);
+      if (!rows.length) { el.innerHTML = `<p class="note">No store listings for "${esc(q)}" in the last 30 days. Set an alert below and you'll hear about the next one.</p>`; return; }
+      el.innerHTML = `<section class="stores"><h2>Every store listing · last 30 days</h2><div class="tablewrap"><table>
+        <thead><tr><th>Listing</th><th class="hide-s">Store</th><th class="num">Price</th><th class="num hide-s">Seen</th><th></th></tr></thead>
+        <tbody>${rows.map(x => `<tr><td class="name">${esc(x.title)}${x.upc ? `<small>UPC ${esc(x.upc)}</small>` : ''}</td><td class="hide-s">${esc(x.store || '')}</td>
+        <td class="num">${x.cpr ? `${Math.round(x.cpr * 10) / 10}¢/rd<small>${fmtUSD(x.price)}${x.rounds ? ' · ' + x.rounds + ' rds' : ''}</small>` : fmtUSD(x.price)}</td>
+        <td class="num hide-s">${esc(String(x.last_seen || '').slice(5))}</td>
+        <td class="num"><a class="go" href="${esc(x.link)}" target="_blank" rel="sponsored nofollow noopener">View</a></td></tr>`).join('')}</tbody></table></div></section>`;
+    } catch (e) { el.innerHTML = ''; }
+  }, (opts && opts.now) ? 0 : 350);
+}
+function renderTools() {
+  setNav('nav-tools');
+  $('#view').innerHTML = `<section class="files"><h1>Is it a good deal?</h1><p class="note" style="max-width:60ch">Found a price somewhere? Check it against what I've tracked, and work out the real cost per round.</p></section>
+  <div class="tools">
+    <div class="card"><h2>Deal checker</h2>
+      <form id="dc" class="alert" novalidate>
+        <label for="dc-item">Gun or caliber<input id="dc-item" list="dc-list" placeholder="9mm, Glock 19, Taurus TX22" autocomplete="off"><datalist id="dc-list">${DATA.items.map(x => `<option value="${esc(x.name)}"></option>`).join('')}</datalist></label>
+        <div class="af-row"><label for="dc-price">Price ($)<input id="dc-price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="289.99"></label>
+        <label for="dc-rounds" id="dc-rl">Rounds in the box<input id="dc-rounds" type="number" inputmode="numeric" min="1" placeholder="1000"></label></div>
+        <button class="btn" type="submit">Check it</button>
+      </form>
+      <div id="dc-out" class="verdict" role="status"></div>
+    </div>
+    <div class="card"><h2>Ammo cost calculator</h2>
+      <form id="calc" class="alert" novalidate>
+        <div class="af-row"><label for="calc-price">Box price ($)<input id="calc-price" type="number" inputmode="decimal" min="0" step="0.01" value="259.34"></label>
+        <label for="calc-rounds">Rounds<input id="calc-rounds" type="number" inputmode="numeric" min="1" value="1000"></label></div>
+        <div class="af-row"><label for="calc-ship">Shipping ($)<input id="calc-ship" type="number" inputmode="decimal" min="0" step="0.01" value="0"></label>
+        <label for="calc-shoot">Rounds per range day<input id="calc-shoot" type="number" inputmode="numeric" min="1" value="200"></label></div>
+      </form>
+      <div id="calc-out" class="verdict"></div>
+    </div>
+  </div>`;
+  const find = v => DATA.items.find(x => x.name.toLowerCase() === String(v).trim().toLowerCase());
+  const syncDc = () => { const it = find($('#dc-item').value); $('#dc-rl').hidden = it ? !isAmmo(it) : false; };
+  $('#dc-item').addEventListener('input', syncDc);
+  $('#dc').addEventListener('submit', e => {
+    e.preventDefault(); const out = $('#dc-out');
+    const it = find($('#dc-item').value); const price = Number($('#dc-price').value); const rounds = Number($('#dc-rounds').value);
+    if (!it) { out.innerHTML = '<p class="msg err">Pick a gun or caliber from the list.</p>'; return; }
+    if (!(price > 0)) { out.innerHTML = '<p class="msg err">Enter the price you found.</p>'; return; }
+    const ammo = isAmmo(it);
+    if (ammo && !(rounds > 0)) { out.innerHTML = '<p class="msg err">Enter how many rounds are in the box.</p>'; return; }
+    const yours = ammo ? price / rounds * 100 : price;
+    const hs = histOf(it.name).map(h => valOf(it, h)).filter(v => v != null);
+    const fmt = v => ammo ? (Math.round(v * 10) / 10) + '¢/rd' : fmtUSD(Math.round(v * 100) / 100);
+    if (!hs.length) { out.innerHTML = `<p><b>${fmt(yours)}</b>. I don't have price history for ${esc(it.name)} yet, so I can't compare. <a href="#${it.slug}">Set an alert</a> and I'll start watching it.</p>`; return; }
+    const low = Math.min(...hs), avg = hs.reduce((a, b) => a + b, 0) / hs.length, now = hs[hs.length - 1];
+    const pct = Math.round((yours - avg) / avg * 100);
+    const verdict = yours <= low ? ['down', 'Great deal', 'At or below the lowest price I\'ve tracked.'] : yours <= avg * 0.97 ? ['down', 'Good deal', Math.abs(pct) + '% under the average.'] : yours <= avg * 1.05 ? ['', 'Fair price', 'About average.'] : ['up', 'Wait for a better one', pct + '% over the average.'];
+    out.innerHTML = `<p class="big"><span class="chip ${verdict[0]}">${verdict[1]}</span> <b>${fmt(yours)}</b></p><p>${verdict[2]}</p>
+      <p class="fine mono">Lowest tracked ${fmt(low)} · average ${fmt(avg)} · latest ${fmt(now)} · ${hs.length} day${hs.length > 1 ? 's' : ''} of history</p><p><a href="#${it.slug}">See the ${esc(it.name)} price history →</a></p>`;
+  });
+  const calc = () => {
+    const p = Number($('#calc-price').value) || 0, n = Number($('#calc-rounds').value) || 0, sh = Number($('#calc-ship').value) || 0, day = Number($('#calc-shoot').value) || 0;
+    if (!(n > 0)) { $('#calc-out').innerHTML = ''; return; }
+    const cpr = (p + sh) / n * 100;
+    $('#calc-out').innerHTML = `<p class="big mono"><b>${(Math.round(cpr * 10) / 10)}¢</b> per round</p>
+      <p class="fine mono">1,000 rounds ≈ ${fmtUSD(Math.round(cpr * 10))} · ${day ? `a ${day}-round range day ≈ ${fmtUSD(Math.round(cpr * day) / 100)} · ` : ''}this box lasts ${day ? (Math.round(n / day * 10) / 10) + ' range days' : '–'}</p>`;
+  };
+  document.querySelectorAll('#calc input').forEach(i => i.addEventListener('input', calc)); calc();
+}
 function renderFiles() {
   setNav('nav-files');
   $('#view').innerHTML = `<section class="files"><h1>3D files</h1><p class="note" style="max-width:60ch">Search printable holsters, mag carriers, mounts, ammo boxes and range gear across Printables, Thingiverse, MakerWorld and Cults, plus my own designs. Coming soon.</p></section>`;
@@ -380,7 +465,7 @@ function renderFiles() {
 function route() {
   const h = location.hash.slice(1);
   const it = DATA.items.find(x => x.slug === h);
-  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files') renderFiles(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else renderTracker();
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else renderTracker();
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);

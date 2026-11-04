@@ -1,0 +1,8 @@
+name = "gunzalezserg"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gunzalezserg-prices"
+database_id = "7f68b370-a589-4bdc-99a0-2ba93b423fec"
