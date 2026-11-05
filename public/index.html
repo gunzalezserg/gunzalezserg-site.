@@ -133,7 +133,7 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
       <a href="#videos" id="nav-videos">Videos</a>
       <a href="#gear" id="nav-gear">Gear</a>
       <a href="#builds" id="nav-builds">Builds</a>
-      <a href="#files" id="nav-files">3D files</a>
+      <a href="#printing" id="nav-files">3D printing</a>
     </nav>
   </header>
 
@@ -497,13 +497,16 @@ async function renderProduct(id) {
 }
 function renderFiles() {
   setNav('nav-files');
-  $('#view').innerHTML = `<section class="files"><h1>3D files</h1><p class="note" style="max-width:60ch">Search printable holsters, mag carriers, mounts, ammo boxes and range gear across Printables, Thingiverse, MakerWorld and Cults, plus my own designs. Coming soon.</p></section>`;
+  const tips = (DATA.tips || []);
+  $('#view').innerHTML = `<section class="files"><h1>3D printing</h1><p class="note" style="max-width:60ch">Tips from my own printing, the parts I used, and help if you don't have a printer.</p></section>
+  <div class="ggrid">${tips.map((t, i) => `<article class="card gcard"><span class="dk">Tip ${i + 1}</span><h3>${esc(t.tip)}</h3>${t.details ? `<p>${esc(t.details)}</p>` : ''}
+    ${t.link ? `<a class="btn" href="${esc(t.link)}" target="_blank" rel="nofollow noopener">${esc(t.label)}</a>` : ''}</article>`).join('') || '<p class="note">Printing tips are coming soon.</p>'}</div>`;
 }
 function route() {
   const h = location.hash.slice(1);
   const it = DATA.items.find(x => x.slug === h);
   if (h.startsWith('p-')) { renderProduct(decodeURIComponent(h.slice(2))); return; }
-  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else renderTracker();
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else renderTracker();
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
