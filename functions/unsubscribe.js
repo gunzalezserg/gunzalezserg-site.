@@ -7,5 +7,5 @@ export async function onRequestGet({ request, env }) {
   if (!/^rec[A-Za-z0-9]{14}$/.test(r)) return page('Link not recognized', 'That unsubscribe link looks incomplete. Reply to any alert email and I\'ll take you off the list by hand.');
   try { await env.DB.prepare('INSERT OR IGNORE INTO unsubscribes (req_id, at) VALUES (?, ?)').bind(r, new Date().toISOString()).run(); }
   catch (e) { return page('Something went wrong', 'I couldn\'t save that just now. Try the link again in a minute, or reply to the email.'); }
-  return page("You're unsubscribed", "You won't get any more emails for this alert. You can set a new one any time on the site.");
+  return page("You're unsubscribed", "You won't get these emails anymore. You can sign up again any time on the site.");
 }

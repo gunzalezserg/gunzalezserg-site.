@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Email Sender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root {
+  --bg: #ECEEE9; --surface: #FBFBF8; --ink: #1B211E; --muted: #5C6660; --line: #CDD3CC;
+  --brass: #9A6A12; --brass-soft: #F1E3C2; --ok: #2D7A4C; --bad: #B03F2C;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111513; --surface: #181E1B; --ink: #E6E9E2; --muted: #98A39C; --line: #2B3430;
+  --brass: #D8A443; --brass-soft: #3A2E15; --ok: #5DBE87; --bad: #E37D67; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #111513; --surface: #181E1B; --ink: #E6E9E2; --muted: #98A39C; --line: #2B3430; --brass: #D8A443; --brass-soft: #3A2E15; --ok: #5DBE87; --bad: #E37D67; color-scheme: dark }
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); padding: 0 max(16px, env(safe-area-inset-left)) 48px max(16px, env(safe-area-inset-right)) }
+.wrap { max-width: 980px; margin: 0 auto }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 0; border-bottom: 2px solid var(--ink); flex-wrap: wrap }
+header b { font: 900 30px/1 var(--display); text-transform: uppercase; letter-spacing: .02em }
+header span { font: 600 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--brass) }
+h2 { font: 800 24px/1 var(--display); text-transform: uppercase; margin: 0 0 12px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 18px }
+.grid { display: grid; gap: 16px; margin-top: 20px }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px }
+.stat small { display: block; font: 600 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.stat b { font: 600 28px/1.1 var(--mono); font-variant-numeric: tabular-nums }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start }
+label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 4px }
+label:first-child { margin-top: 0 }
+input[type=text], input[type=password], input[type=url], textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); font: inherit }
+textarea { min-height: 200px; resize: vertical }
+.hint { font-size: 12px; color: var(--muted); margin: 4px 0 0 }
+.aud { display: grid; gap: 8px }
+.aud label { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-weight: 500; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; cursor: pointer }
+.aud label:has(input:checked) { border-color: var(--brass); background: var(--brass-soft) }
+.aud input { margin-top: 4px; accent-color: var(--brass) }
+.aud small { display: block; color: var(--muted); font-size: 12px }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px }
+button { min-height: 44px; padding: 10px 16px; border-radius: 6px; font: 600 14px var(--body); cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink) }
+button.primary { background: var(--brass); border-color: var(--brass); color: #fff }
+button.danger { background: var(--bad); border-color: var(--bad); color: #fff }
+button:disabled { opacity: .5; cursor: default }
+.msg { margin-top: 10px; min-height: 1.4em; font-size: 14px }
+.msg.ok { color: var(--ok) } .msg.bad { color: var(--bad) }
+.preview { background: #fff; color: #1B211E; border: 1px solid var(--line); border-radius: 4px; padding: 16px; font: 15px/1.55 Arial, sans-serif; max-height: 520px; overflow: auto }
+.preview .subj { font-weight: 700; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 10px }
+.preview a.b { background: #D8A443; color: #1B211E; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block }
+table { width: 100%; border-collapse: collapse; font-size: 14px }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font: 600 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+.tablewrap { overflow-x: auto }
+#gate { max-width: 420px; margin: 40px auto 0 }
+[hidden] { display: none !important }
+@media (max-width: 760px) { .stats { grid-template-columns: repeat(2, 1fr) } .two { grid-template-columns: 1fr } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><b>Email sender</b><span>@gunzalezserg</span></header>
+
+  <form id="gate" class="card">
+    <h2>Unlock</h2>
+    <label for="pass">Passphrase</label>
+    <input type="password" id="pass" autocomplete="current-password" required>
+    <div class="row"><button class="primary" type="submit">Open</button></div>
+    <p class="msg" id="gate-msg" role="status"></p>
+  </form>
+
+  <main id="app" hidden>
+    <div class="grid">
+      <div class="stats">
+        <div class="stat"><small>Email list</small><b id="s-list">–</b></div>
+        <div class="stat"><small>Everyone with email</small><b id="s-all">–</b></div>
+        <div class="stat"><small>Weekly digest</small><b id="s-weekly">–</b></div>
+        <div class="stat"><small>Sent today</small><b id="s-today">–</b></div>
+      </div>
+
+      <div class="two">
+        <form id="compose" class="card">
+          <h2>Write an email</h2>
+          <label>Send to</label>
+          <div class="aud">
+            <label><input type="radio" name="aud" value="list" checked><span>Email list <span id="c-list"></span><small>People who signed up for my emails (EMAILS keyword or the website).</small></span></label>
+            <label><input type="radio" name="aud" value="all"><span>Everyone with an email <span id="c-all"></span><small>Email list plus everyone who gave an email in DMs (STL file people). Use this sparingly.</small></span></label>
+          </div>
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" maxlength="150" required>
+          <label for="message">Message</label>
+          <textarea id="message" maxlength="8000" required placeholder="Write it like a DM. Leave a blank line between paragraphs."></textarea>
+          <label for="btnText">Button text (optional)</label>
+          <input type="text" id="btnText" maxlength="40" placeholder="Watch it">
+          <label for="btnUrl">Button link (optional)</label>
+          <input type="url" id="btnUrl" placeholder="https://www.instagram.com/reel/...">
+          <p class="hint">Every email gets your name, the site link and an unsubscribe link at the bottom.</p>
+          <div class="row">
+            <button type="button" id="test">Send me a test</button>
+            <button type="button" class="primary" id="send">Send</button>
+          </div>
+          <div class="row" id="confirm" hidden>
+            <button type="button" class="danger" id="yes">Yes, send to <span id="yes-n"></span></button>
+            <button type="button" id="no">Cancel</button>
+          </div>
+          <p class="msg" id="msg" role="status"></p>
+        </form>
+
+        <div class="card">
+          <h2>Preview</h2>
+          <div class="preview" id="preview"><p style="color:#777">Start typing to see your email.</p></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sent emails</h2>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Subject</th><th>Type</th><th>Sent</th><th>Opened</th><th>Clicked</th><th>When</th></tr></thead>
+          <tbody id="bc"><tr><td colspan="6">Loading…</td></tr></tbody>
+        </table></div>
+        <p class="hint">Opens are approximate: some email apps block the tracking image, and Apple Mail can count opens that never happened. Clicks are exact.</p>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let PASS = '', STATS = null;
+const store = { get(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function api(body) {
+  const r = await fetch('/api/mail', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ pass: PASS }, body)) });
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  if (!j || typeof j !== 'object') j = {};
+  if (!r.ok && !j.error) j.error = 'Server error (' + r.status + ')';
+  return j;
+}
+function showStats(j) {
+  STATS = j;
+  $('#s-list').textContent = j.counts.list; $('#s-all').textContent = j.counts.all; $('#s-weekly').textContent = j.counts.weekly;
+  $('#s-today').textContent = j.sentToday + ' / ' + j.limit;
+  $('#c-list').textContent = '(' + j.counts.list + ')'; $('#c-all').textContent = '(' + j.counts.all + ')';
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+  $('#bc').innerHTML = (j.broadcasts || []).map(b => '<tr><td>' + esc(b.subject) + '</td><td>' + esc(b.type) + '</td><td class="n">' + b.sent + '</td><td class="n">' + b.opens + ' (' + pct(b.opens, b.sent) + ')</td><td class="n">' + b.clicks + ' (' + pct(b.clicks, b.sent) + ')</td><td class="n">' + (b.at ? new Date(b.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '') + '</td></tr>').join('') || '<tr><td colspan="6">Nothing sent yet.</td></tr>';
+}
+async function unlock(p) {
+  PASS = p; $('#gate-msg').textContent = 'Checking…'; $('#gate-msg').className = 'msg';
+  const j = await api({ action: 'stats' }).catch(() => ({ error: 'Could not reach the server.' }));
+  if (!j.ok) { $('#gate-msg').textContent = j.error || 'Wrong passphrase'; $('#gate-msg').className = 'msg bad'; return; }
+  store.set('mailpass', p); $('#gate').hidden = true; $('#app').hidden = false; showStats(j);
+}
+$('#gate').addEventListener('submit', e => { e.preventDefault(); unlock($('#pass').value.trim()); });
+const saved = store.get('mailpass'); if (saved) { $('#pass').value = saved; unlock(saved); }
+function preview() {
+  const s = $('#subject').value.trim(), m = $('#message').value.trim(), bt = $('#btnText').value.trim() || 'Check it out', bu = $('#btnUrl').value.trim();
+  if (!s && !m) { $('#preview').innerHTML = '<p style="color:#777">Start typing to see your email.</p>'; return; }
+  const paras = m.split(/\n\s*\n/).map(p => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('');
+  $('#preview').innerHTML = '<div class="subj">' + esc(s || '(no subject)') + '</div>' + paras + (bu ? '<p><a class="b" href="' + esc(bu) + '" target="_blank" rel="noopener">' + esc(bt) + '</a></p>' : '') + '<p>Sergio<br>@gunzalezserg · gunzalezserg.com</p><p style="font-size:12px;color:#777">Unsubscribe</p>';
+}
+['#subject', '#message', '#btnText', '#btnUrl'].forEach(id => $(id).addEventListener('input', preview));
+const aud = () => document.querySelector('input[name=aud]:checked').value;
+const payload = action => ({ action, audience: aud(), subject: $('#subject').value, message: $('#message').value, btnText: $('#btnText').value, btnUrl: $('#btnUrl').value });
+function say(t, ok) { $('#msg').textContent = t; $('#msg').className = 'msg' + (ok === true ? ' ok' : ok === false ? ' bad' : ''); }
+function valid() { if (!$('#subject').value.trim() || !$('#message').value.trim()) { say('Add a subject and a message.', false); return false; } const u = $('#btnUrl').value.trim(); if (u && !/^https?:\/\//.test(u)) { say('The button link has to start with https://', false); return false; } return true; }
+$('#test').addEventListener('click', async () => {
+  if (!valid()) return; $('#test').disabled = true; say('Sending a test to gunzalezserg@gmail.com…');
+  const j = await api(payload('test')).catch(() => ({ error: 'Could not reach the server.' }));
+  $('#test').disabled = false;
+  if (j.ok) { say('Test sent to gunzalezserg@gmail.com. Check it (and your spam folder) before sending for real.', true); showStats(j); } else say(j.error || 'Something went wrong.', false);
+});
+$('#send').addEventListener('click', () => {
+  if (!valid()) return;
+  const n = STATS ? STATS.counts[aud()] : '?';
+  $('#yes-n').textContent = n + ' ' + (n === 1 ? 'person' : 'people'); $('#confirm').hidden = false; $('#send').hidden = true; say('Double check the preview. This can’t be undone.');
+});
+$('#no').addEventListener('click', () => { $('#confirm').hidden = true; $('#send').hidden = false; say(''); });
+$('#yes').addEventListener('click', async () => {
+  $('#yes').disabled = true; say('Sending…');
+  const j = await api(payload('send')).catch(() => ({ error: 'Could not reach the server.' }));
+  $('#yes').disabled = false; $('#confirm').hidden = true; $('#send').hidden = false;
+  if (j.ok) { say('Sending to ' + j.queued + ' people now. It takes a few minutes to go out. Opens and clicks show up below.', true); showStats(j); setTimeout(async () => { const s = await api({ action: 'stats' }); if (s.ok) showStats(s); }, 60000); }
+  else say(j.error || 'Something went wrong.', false);
+});
+</script>
+</body>
+</html>

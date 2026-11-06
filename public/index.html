@@ -119,6 +119,14 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
 .files { padding-block: 24px } .files h1 { font: 800 44px/1 var(--display); text-transform: uppercase; margin: 0 0 8px }
 @media (max-width: 760px) { .hero, .item { grid-template-columns: 1fr } .hide-s { display: none } }
 @media (prefers-reduced-motion: no-preference) { tr.row td { transition: background .12s } }
+.signup { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: center; margin: 36px 0 8px; padding: 22px; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--brass); border-radius: 4px }
+.signup h2 { font: 800 28px/1 var(--display); text-transform: uppercase; margin: 0 0 6px }
+.signup p { margin: 0; color: var(--muted) }
+.signup form { display: flex; flex-wrap: wrap; gap: 8px; position: relative }
+.signup input[type=email], .signup select { flex: 1 1 180px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); font: inherit }
+.signup .btn { min-height: 44px }
+.signup #su-msg { flex-basis: 100%; min-height: 1.2em }
+@media (max-width: 720px) { .signup { grid-template-columns: 1fr } }
 </style>
 </head>
 <body>
@@ -139,6 +147,16 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
 
   <main id="view"></main>
 
+  <section class="signup" aria-labelledby="su-h">
+    <div><h2 id="su-h">Get an email when I drop a new video</h2><p>Range days, gear tests and the deals I find. No spam, unsubscribe any time.</p></div>
+    <form id="su-form" novalidate>
+      <input type="email" id="su-email" placeholder="you@email.com" autocomplete="email" required aria-label="Your email">
+      <select id="su-freq" aria-label="How often"><option value="every">Every new video</option><option value="weekly">Once a week</option></select>
+      <input type="text" id="su-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+      <button type="submit" class="btn">Sign me up</button>
+      <p id="su-msg" class="note" role="status"></p>
+    </form>
+  </section>
   <footer>
     <div>Prices come from public deal posts and are checked every night around 8:47pm Central. Prices change fast, so confirm on the store's page before you buy.</div>
     <div>Some links are affiliate links: I may earn a commission at no extra cost to you. I don't sell guns. Firearms ship to a licensed FFL dealer and go through a background check. You must be 21+ and legally allowed to buy where you live.</div>
@@ -511,6 +529,22 @@ function route() {
 }
 window.addEventListener('hashchange', route);
 fetch('data/prices.json').then(r => r.json()).then(d => { DATA = d; route(); }).catch(() => { $('#view').innerHTML = '<p class="note">Prices could not load. Refresh the page to try again.</p>'; });
+
+document.getElementById('su-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('su-msg'), btn = e.target.querySelector('button');
+  const email = document.getElementById('su-email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) { msg.textContent = 'That email doesn\u2019t look right.'; return; }
+  btn.disabled = true; msg.textContent = 'Signing you up\u2026';
+  try {
+    const r = await fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, freq: document.getElementById('su-freq').value, hp: document.getElementById('su-hp').value }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || 'Try again in a minute.');
+    msg.textContent = 'You\u2019re on the list. Check your inbox for a confirmation (and peek in spam the first time).';
+    e.target.reset();
+  } catch (err) { msg.textContent = err.message || 'Try again in a minute.'; }
+  btn.disabled = false;
+});
 </script>
 
 </body>
