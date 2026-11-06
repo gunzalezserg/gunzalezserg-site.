@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Site Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root {
+  --bg: #ECEEE9; --surface: #FBFBF8; --ink: #1B211E; --muted: #5C6660; --line: #CDD3CC; --hover: #F2F3EE;
+  --brass: #9A6A12; --brass-soft: #F1E3C2; --ok: #2D7A4C; --bad: #B03F2C; --shade: rgba(20,25,22,.45);
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111513; --surface: #181E1B; --ink: #E6E9E2; --muted: #98A39C; --line: #2B3430; --hover: #1F2622;
+  --brass: #D8A443; --brass-soft: #3A2E15; --ok: #5DBE87; --bad: #E37D67; --shade: rgba(0,0,0,.6); color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #111513; --surface: #181E1B; --ink: #E6E9E2; --muted: #98A39C; --line: #2B3430; --hover: #1F2622; --brass: #D8A443; --brass-soft: #3A2E15; --ok: #5DBE87; --bad: #E37D67; --shade: rgba(0,0,0,.6); color-scheme: dark }
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body) }
+button, input, select, textarea { font: inherit; color: inherit }
+a { color: var(--brass) }
+[hidden] { display: none !important }
+.btn { min-height: 40px; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 600 }
+.btn:hover { background: var(--hover) }
+.btn.primary { background: var(--brass); border-color: var(--brass); color: #16120a }
+.btn.primary:hover { filter: brightness(1.06) }
+.btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)) }
+.btn:disabled { opacity: .55; cursor: default }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px }
+input[type=text], input[type=email], input[type=url], input[type=number], input[type=date], input[type=search], select, textarea { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg) }
+textarea { min-height: 96px; resize: vertical }
+input[readonly] { opacity: .7 }
+
+/* Login */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px }
+.login form { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--brass); border-radius: 6px; padding: 26px 22px }
+.login h1 { font: 900 34px/1 var(--display); text-transform: uppercase; margin: 0 0 4px }
+.login p { color: var(--muted); margin: 0 0 18px }
+.login label { display: block; font-weight: 600; font-size: 13px; margin: 0 0 6px }
+.login .btn { width: 100%; margin-top: 14px }
+.code { font: 600 28px/1 var(--mono) !important; letter-spacing: .3em; text-align: center }
+.msg { min-height: 1.4em; margin-top: 10px; font-size: 14px }
+.msg.bad { color: var(--bad) } .msg.ok { color: var(--ok) }
+.link { background: none; border: 0; padding: 0; color: var(--brass); cursor: pointer; text-decoration: underline; font-size: 14px }
+
+/* App shell */
+.app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh }
+nav.side { background: var(--surface); border-right: 1px solid var(--line); padding: 18px 12px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; overflow-y: auto }
+.brand { font: 900 22px/1 var(--display); text-transform: uppercase; padding: 0 8px 4px }
+.brand span { color: var(--brass) }
+.sub { font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 0 8px 16px }
+.group { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 14px 8px 6px }
+nav.side button.tab { text-align: left; background: none; border: 0; border-radius: 4px; padding: 9px 10px; cursor: pointer; font-weight: 500; display: flex; justify-content: space-between; align-items: center }
+nav.side button.tab:hover { background: var(--hover) }
+nav.side button.tab[aria-current="true"] { background: var(--brass-soft); color: var(--ink); font-weight: 600 }
+nav.side .count { font: 500 12px var(--mono); color: var(--muted) }
+nav.side a.tab { display: block; padding: 9px 10px; border-radius: 4px; color: var(--ink); text-decoration: none; font-weight: 500 }
+nav.side a.tab:hover { background: var(--hover) }
+.side-foot { margin-top: auto; padding: 14px 8px 0; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line) }
+main { padding: 20px 28px 60px; min-width: 0 }
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 2px solid var(--ink) }
+.top h2 { font: 900 32px/1 var(--display); text-transform: uppercase; margin: 0; flex: 1 }
+.publish { display: flex; align-items: center; gap: 10px }
+.pending { font: 600 12px var(--mono); color: var(--brass); letter-spacing: .04em }
+.help { color: var(--muted); margin: 12px 0 14px; max-width: 70ch; font-size: 14px }
+.live { display: inline-block; font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 3px; margin-right: 6px; vertical-align: 1px }
+.live.now { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok) }
+.live.pub { background: var(--brass-soft); color: var(--brass) }
+.bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px }
+.bar input { flex: 1; min-width: 180px }
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden }
+.row { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--line); cursor: pointer }
+.row:last-child { border-bottom: 0 }
+.row:hover { background: var(--hover) }
+.row .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.row .s { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.row .meta { font: 500 12px var(--mono); color: var(--muted); text-align: right; white-space: nowrap }
+.row.off .t { color: var(--muted) }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted) }
+.sw { position: relative; width: 40px; height: 24px; flex: none }
+.sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1 }
+.sw span { position: absolute; inset: 0; border-radius: 12px; background: var(--line); transition: background .15s }
+.sw span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25) }
+.sw input:checked + span { background: var(--ok) }
+.sw input:checked + span::after { transform: translateX(16px) }
+.sw input:focus-visible + span { outline: 2px solid var(--brass); outline-offset: 2px }
+.tick { width: 40px }
+
+/* Drawer */
+.shade { position: fixed; inset: 0; background: var(--shade); z-index: 10 }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: var(--surface); z-index: 11; display: flex; flex-direction: column; border-left: 1px solid var(--line) }
+.drawer header { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line) }
+.drawer header h3 { font: 800 24px/1.05 var(--display); text-transform: uppercase; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.drawer .body { padding: 16px 18px 24px; overflow-y: auto; flex: 1 }
+.drawer footer { display: flex; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); background: var(--surface) }
+.drawer footer .grow { flex: 1 }
+.f { margin-bottom: 14px }
+.f > label, .f > .lab { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px }
+.f .hint { font-weight: 400; color: var(--muted); font-size: 12px; margin-top: 4px }
+.f.inline { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg) }
+.f.inline > label { margin: 0 }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chips label { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 14px; background: var(--bg) }
+.chips input { accent-color: var(--brass) }
+.ro { padding: 9px 11px; border: 1px dashed var(--line); border-radius: 4px; color: var(--muted); min-height: 42px; white-space: pre-wrap; word-break: break-word }
+.count-chars { float: right; font: 500 11px var(--mono); color: var(--muted) }
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 4px; z-index: 20; font-weight: 600; max-width: calc(100% - 32px) }
+.toast.bad { background: var(--bad); color: #fff }
+.mobile-tabs { display: none }
+
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr }
+  nav.side { display: none }
+  .mobile-tabs { display: block; position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); padding: 10px 16px }
+  .mobile-tabs .mrow { display: flex; gap: 10px; align-items: center }
+  .mobile-tabs .brand { padding: 0; font-size: 20px; flex: 1 }
+  .mobile-tabs select { margin-top: 8px }
+  main { padding: 14px 16px 60px }
+  .top h2 { font-size: 26px }
+  #b-pub { display: none }
+  .row { grid-template-columns: auto 1fr; }
+  .row .meta { display: none }
+}
+</style>
+</head>
+<body>
+
+<div class="login" id="login" hidden>
+  <form id="f-email">
+    <h1>Site admin</h1>
+    <p>Sign in to edit gunzalezserg.com. We'll email you a 6-digit code.</p>
+    <label for="email">Email</label>
+    <input type="email" id="email" autocomplete="email" required value="gunzalezserg@gmail.com">
+    <button class="btn primary" type="submit" id="b-send">Email me a code</button>
+    <p class="msg" id="m-email" role="status"></p>
+  </form>
+  <form id="f-code" hidden>
+    <h1>Check your email</h1>
+    <p id="code-sent">Type the 6-digit code we sent you.</p>
+    <label for="code">Code</label>
+    <input type="text" id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+    <button class="btn primary" type="submit" id="b-verify">Sign in</button>
+    <p class="msg" id="m-code" role="status"></p>
+    <button class="link" type="button" id="b-back">Use a different email or send a new code</button>
+  </form>
+</div>
+
+<div class="app" id="app" hidden>
+  <nav class="side" id="side" aria-label="Sections"></nav>
+  <div>
+    <div class="mobile-tabs">
+      <div class="mrow"><div class="brand">Gunzalez<span>Serg</span></div><button class="btn" id="b-pub-m">Publish</button></div>
+      <label for="msel" class="sr" hidden>Section</label>
+      <select id="msel" aria-label="Section"></select>
+    </div>
+    <main>
+      <div class="top">
+        <h2 id="title">Gear</h2>
+        <div class="publish"><span class="pending" id="pending" hidden>Unpublished changes</span><button class="btn primary" id="b-pub">Publish site</button></div>
+      </div>
+      <p class="help" id="help"></p>
+      <div class="bar">
+        <input type="search" id="q" placeholder="Search" aria-label="Search">
+        <button class="btn" id="b-friends" hidden>Friends &amp; family</button>
+        <button class="btn primary" id="b-add">+ Add</button>
+      </div>
+      <div class="list" id="list"><div class="empty">Loading…</div></div>
+    </main>
+  </div>
+</div>
+
+<div class="shade" id="shade" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title" hidden>
+  <header><h3 id="d-title">Edit</h3><button class="btn" id="b-close" aria-label="Close">✕</button></header>
+  <form class="body" id="form"></form>
+  <footer><button class="btn danger" type="button" id="b-del">Delete</button><span class="grow"></span><button class="btn" type="button" id="b-cancel">Cancel</button><button class="btn primary" type="button" id="b-save">Save</button></footer>
+</aside>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = { get(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+// What each section edits. type: text | long | url | number | money | bool | select | multi | tags | date | ro
+const T = {
+  gear: { label: 'Gear', group: 'Website', site: true, title: 'Product', sub: ['Brand', 'Category'], toggle: 'Show', order: 'Order', help: 'The "Gear I use" section. Switch Show on to put an item on the site.',
+    fields: [['Product', 'text'], ['Show', 'bool', 'Show on the site'], ['Brand', 'text'], ['Category', 'select', '', ['Optics', 'Lights', 'Holsters', 'Ear pro', 'Cameras', 'Range gear', 'Other']], ['Affiliate link', 'url', 'Your affiliate or store link'], ['Discount code', 'text'], ['Blurb', 'long', 'One or two lines in your words: why you use it'], ['Video', 'url', 'Your reel or YouTube video of it'], ['Order', 'number', 'Lower shows first']] },
+  builds: { label: 'Builds', group: 'Website', site: true, title: 'Build', sub: ['Base gun'], toggle: 'Show', order: 'Order', help: 'Full builds on the Builds page.',
+    fields: [['Build', 'text'], ['Show', 'bool', 'Show on the site'], ['Base gun', 'text'], ['Summary', 'long', 'A few lines on the build'], ['Parts', 'long', 'One part per line: Part name | link (link is optional)'], ['Video', 'url'], ['Order', 'number', 'Lower shows first']] },
+  content: { label: 'Videos', group: 'Website', site: true, title: 'Title', sub: ['Type', 'Date'], toggle: 'Show', help: 'Extra videos for "My content". Your newest Instagram reels show up on their own; add YouTube videos or reels to pin here.',
+    fields: [['Title', 'text'], ['Show', 'bool', 'Show on the site'], ['URL', 'url', 'Instagram reel or YouTube link'], ['Type', 'select', '', ['Instagram', 'YouTube']], ['Pinned', 'bool', 'Pinned videos show first'], ['Date', 'date']] },
+  tips: { label: '3D printing', group: 'Website', site: true, title: 'Tip', sub: ['Link label'], toggle: 'Show', order: 'Order', help: 'Tips on the 3D printing page.',
+    fields: [['Tip', 'text'], ['Show', 'bool', 'Show on the site'], ['Details', 'long'], ['Link', 'url'], ['Link label', 'text', 'Button text for the link'], ['Order', 'number', 'Lower shows first']] },
+  tracked: { label: 'Price tracker', group: 'Website', site: true, title: 'Item', sub: ['Type', 'Group'], toggle: 'Track', help: 'Guns and ammo the price tracker watches. Track = include it. Focus = feature it on the homepage and in stories.',
+    fields: [['Item', 'text'], ['Track', 'bool', 'Track prices for this'], ['Focus', 'bool', 'Feature it (homepage, stories)'], ['Type', 'select', '', ['Ammo', 'Gun', 'Optic', 'Gear']], ['Group', 'text', 'Caliber family or brand, for the site menus'], ['Match words', 'text', 'Alternatives separated by | . Every word in one alternative must be in the deal title'], ['Exclude words', 'text', 'Same format. Deals with these are skipped'], ['Min price', 'money'], ['Max price', 'money'], ['Slug', 'text', 'Page path, like ammo/9mm or guns/glock-19'], ['Notes', 'long']] },
+  rules: { label: 'DM automations', group: 'Automations', site: false, title: 'Name', sub: ['Trigger words'], toggle: 'Active', order: 'Priority', help: 'Comment-to-DM keywords. Changes work right away, no publish needed.',
+    fields: [['Name', 'text', 'Keep names unique'], ['Active', 'bool', 'Rule is on'], ['Trigger words', 'text', 'Comma-separated, e.g. LINK, STL'], ['Also matches', 'text', 'Extra phrases, comma-separated'], ['Match type', 'select', '', ['Smart', 'Contains', 'Exact']], ['Trigger on', 'multi', 'Blank = Comments', ['Comments', 'DMs', 'Story replies', 'Story mentions', 'First DM']], ['Platforms', 'multi', 'Blank = Instagram', ['Instagram', 'Facebook']], ['Applies to', 'select', '', ['All posts', 'Only selected posts', 'Posts after this rule is made']], ['Public reply variations', 'long', 'One per line. One is picked at random for each comment'], ['DM text', 'long', 'First DM they get'], ['Button label', 'text', 'Max 20 characters', null, 20], ['Link URL', 'url'], ['Link message', 'long', 'Sent with the link'], ['Follow gate', 'bool', 'They must follow before getting the link'], ['Not-following message', 'long'], ['Collect email', 'bool', 'Ask for their email before the link'], ['Email ask message', 'long'], ['Ask for post alerts', 'bool', 'Adds the 🔔 Post alerts button'], ['Follow-up message', 'long', 'Optional, sent once a few hours later'], ['Follow-up after (hours)', 'number', '1 to 22. Blank = 4'], ['Alert message', 'long', 'Only for the New post alert rule. {caption} = first caption line'], ['Tag', 'text', 'Tag added in Contacts. Blank = rule name'], ['Priority', 'number', 'Lower wins when two rules match']] },
+  contacts: { label: 'Contacts', group: 'Automations', site: false, search: true, noAdd: true, noDelete: true, title: 'Username', sub: ['Tags'], help: 'Search by username, or tap Friends & family. Tag people Friends & family or No alerts to keep them out of automated messages.',
+    fields: [['Username', 'ro'], ['Tags', 'tags', 'Comma-separated. Friends & family and No alerts block automated messages'], ['Bot paused', 'bool', 'Automations stop replying to their DMs'], ['Post alerts', 'bool', 'Gets DM alerts for new posts'], ['Friend check', 'select', 'Set to Recheck to have the Friend Finder look again', ['Friend', 'Not a friend', 'Recheck', 'No thread']], ['Friend check reason', 'ro'], ['Email', 'ro'], ['Follows you', 'ro'], ['Last DM', 'ro'], ['Your messages', 'ro'], ['Notes', 'long']] },
+  emaillist: { label: 'Email list', group: 'Email', site: false, title: 'Email', sub: ['Frequency', 'Source'], help: 'People signed up for your video emails.',
+    fields: [['Email', 'text'], ['Name', 'text'], ['Frequency', 'select', '', ['Every post', 'Weekly digest']], ['Source', 'select', '', ['Website', 'DM', 'Manual']], ['Signed up', 'ro'], ['Unsubscribed', 'bool', 'Stops all emails to them']] }
+};
+const KEYS = Object.keys(T);
+let cur = store.get('admin-tab'); if (!T[cur]) cur = 'gear';
+const DATA = {};
+let editing = null, dirty = false;
+
+async function api(body) {
+  let r, j = {};
+  try { r = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); j = await r.json(); } catch (e) { j = { ok: false, error: 'Could not reach the site.' }; }
+  if (j.signedOut) { showLogin(); }
+  return j || { ok: false };
+}
+function toast(msg, bad) { const t = $('#toast'); t.textContent = msg; t.className = 'toast' + (bad ? ' bad' : ''); t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, bad ? 5000 : 2600); }
+function setPending(on) { store.set('admin-pending', on ? '1' : ''); $('#pending').hidden = !on; }
+
+/* ---------- Login ---------- */
+function showLogin() { $('#app').hidden = true; $('#login').hidden = false; $('#f-email').hidden = false; $('#f-code').hidden = true; }
+$('#f-email').addEventListener('submit', async e => {
+  e.preventDefault(); const m = $('#m-email'), b = $('#b-send'); m.className = 'msg'; m.textContent = 'Sending…'; b.disabled = true;
+  const email = $('#email').value.trim();
+  const r = await fetch('/api/auth/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then(r => r.json()).catch(() => ({ error: 'Could not reach the site.' }));
+  b.disabled = false;
+  if (!r.ok) { m.className = 'msg bad'; m.textContent = r.error || 'Could not send the code.'; return; }
+  m.textContent = ''; $('#f-email').hidden = true; $('#f-code').hidden = false; $('#code-sent').textContent = 'Type the 6-digit code we sent to ' + email + '. It works for 10 minutes.'; $('#code').value = ''; $('#code').focus();
+});
+$('#code').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); if (e.target.value.length === 6) $('#f-code').requestSubmit(); });
+$('#f-code').addEventListener('submit', async e => {
+  e.preventDefault(); const m = $('#m-code'), b = $('#b-verify'); m.className = 'msg'; m.textContent = 'Checking…'; b.disabled = true;
+  const r = await fetch('/api/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: $('#email').value.trim(), code: $('#code').value }) }).then(r => r.json()).catch(() => ({ error: 'Could not reach the site.' }));
+  b.disabled = false;
+  if (!r.ok) { m.className = 'msg bad'; m.textContent = r.error || 'That did not work.'; return; }
+  start(r.email);
+});
+$('#b-back').addEventListener('click', () => { $('#f-code').hidden = true; $('#f-email').hidden = false; $('#m-email').textContent = ''; });
+
+/* ---------- Shell ---------- */
+function buildNav(email) {
+  let h = '<div class="brand">Gunzalez<span>Serg</span></div><div class="sub">Site admin</div>', g = '';
+  for (const k of KEYS) { if (T[k].group !== g) { g = T[k].group; h += '<div class="group">' + esc(g) + '</div>'; } h += '<button class="tab" data-k="' + k + '"><span>' + esc(T[k].label) + '</span><span class="count" id="c-' + k + '"></span></button>'; }
+  h += '<a class="tab" href="/mail">Send an email →</a><div class="group">Links</div><a class="tab" href="/" target="_blank" rel="noopener">View the site ↗</a>';
+  h += '<div class="side-foot">' + esc(email) + '<br><button class="link" id="b-out">Sign out</button></div>';
+  $('#side').innerHTML = h;
+  $('#msel').innerHTML = KEYS.map(k => '<option value="' + k + '">' + esc(T[k].group + ' · ' + T[k].label) + '</option>').join('') + '<option value="__mail">Email · Send an email</option><option value="__out">Sign out</option>';
+  $('#side').addEventListener('click', e => { const b = e.target.closest('button.tab'); if (b) open(b.dataset.k); if (e.target.id === 'b-out') signOut(); });
+}
+$('#msel').addEventListener('change', e => { const v = e.target.value; if (v === '__mail') location.href = '/mail'; else if (v === '__out') signOut(); else open(v); });
+async function signOut() { await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); location.reload(); }
+
+async function start(email) {
+  $('#login').hidden = true; $('#app').hidden = false; buildNav(email); setPending(!!store.get('admin-pending')); open(cur);
+}
+function open(k) {
+  cur = k; store.set('admin-tab', k); const t = T[k];
+  document.querySelectorAll('nav.side button.tab').forEach(b => b.setAttribute('aria-current', b.dataset.k === k ? 'true' : 'false'));
+  $('#msel').value = k; $('#title').textContent = t.label;
+  $('#help').innerHTML = (t.site ? '<span class="live pub">Publish to update site</span>' : '<span class="live now">Live right away</span>') + esc(t.help);
+  $('#b-add').hidden = !!t.noAdd; $('#b-friends').hidden = k !== 'contacts';
+  $('#q').value = ''; $('#q').placeholder = t.search ? 'Search a username and press Enter' : 'Search';
+  if (t.search) { $('#list').innerHTML = '<div class="empty">Search a username, or tap Friends &amp; family.</div>'; return; }
+  if (DATA[k]) render(); else load(k);
+}
+async function load(k, q) {
+  $('#list').innerHTML = '<div class="empty">Loading…</div>';
+  const j = await api({ action: 'list', table: k, q });
+  if (!j.ok) { $('#list').innerHTML = '<div class="empty">' + esc(j.error || 'Could not load.') + '</div>'; return; }
+  DATA[k] = j.records || []; if (k === cur) render();
+}
+function val(r, f) { const v = r.fields[f]; return Array.isArray(v) ? v.join(', ') : (v == null ? '' : String(v)); }
+function sorted(k) {
+  const t = T[k], list = (DATA[k] || []).slice();
+  list.sort((a, b) => {
+    if (t.toggle) { const d = (b.fields[t.toggle] ? 1 : 0) - (a.fields[t.toggle] ? 1 : 0); if (d) return d; }
+    if (t.order) { const ao = a.fields[t.order], bo = b.fields[t.order]; const an = ao == null ? 1e9 : ao, bn = bo == null ? 1e9 : bo; if (an !== bn) return an - bn; }
+    return val(a, t.title).localeCompare(val(b, t.title));
+  });
+  return list;
+}
+function render() {
+  const k = cur, t = T[k], q = $('#q').value.trim().toLowerCase();
+  let list = sorted(k);
+  if (q && !t.search) list = list.filter(r => Object.values(r.fields).join(' ').toLowerCase().includes(q));
+  const c = $('#c-' + k); if (c && !t.search) c.textContent = (DATA[k] || []).length;
+  if (!list.length) { $('#list').innerHTML = '<div class="empty">' + (q ? 'Nothing matches.' : 'Nothing here yet.') + '</div>'; return; }
+  $('#list').innerHTML = list.map(r => {
+    const on = t.toggle ? !!r.fields[t.toggle] : true;
+    const sub = t.sub.map(f => val(r, f)).filter(Boolean).join(' · ');
+    const meta = t.order && r.fields[t.order] != null ? '#' + r.fields[t.order] : (r.fields['Signed up'] ? new Date(r.fields['Signed up']).toLocaleDateString() : '');
+    return '<div class="row' + (on ? '' : ' off') + '" data-id="' + r.id + '" tabindex="0">'
+      + (t.toggle ? '<label class="sw" title="' + esc(t.toggle) + '"><input type="checkbox" data-tg="' + r.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(t.toggle + ': ' + val(r, t.title)) + '"><span></span></label>' : '<span class="tick"></span>')
+      + '<div style="min-width:0"><div class="t">' + esc(val(r, t.title) || '(untitled)') + '</div>' + (sub ? '<div class="s">' + esc(sub) + '</div>' : '') + '</div>'
+      + '<div class="meta">' + esc(meta) + '</div></div>';
+  }).join('');
+}
+$('#q').addEventListener('input', () => { if (!T[cur].search) render(); });
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter' && T[cur].search) { const q = $('#q').value.trim(); if (q) load(cur, q); } });
+$('#b-friends').addEventListener('click', () => { $('#q').value = ''; load('contacts', 'friends'); });
+$('#list').addEventListener('click', async e => {
+  const tg = e.target.closest('input[data-tg]');
+  if (tg) { e.stopPropagation(); const r = DATA[cur].find(x => x.id === tg.dataset.tg); const f = T[cur].toggle; const nv = tg.checked; const k = cur;
+    const j = await api({ action: 'save', table: k, id: r.id, fields: { [f]: nv } });
+    if (j.ok) { r.fields[f] = nv; if (T[k].site) setPending(true); toast((nv ? 'On: ' : 'Off: ') + val(r, T[k].title)); if (k === cur) render(); } else { tg.checked = !nv; toast(j.error || 'Could not save', true); }
+    return; }
+  if (e.target.closest('label.sw')) return;
+  const row = e.target.closest('.row'); if (row) edit(row.dataset.id);
+});
+$('#list').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList.contains('row')) edit(e.target.dataset.id); });
+
+/* ---------- Editor ---------- */
+function optionsFor(k, f, base) { const s = new Set(base || []); (DATA[k] || []).forEach(r => { const v = r.fields[f]; (Array.isArray(v) ? v : [v]).forEach(x => { if (x) s.add(String(x)); }); }); return [...s]; }
+function edit(id) {
+  const k = cur, t = T[k]; const r = id ? DATA[k].find(x => x.id === id) : { id: null, fields: t.toggle ? { [t.toggle]: k !== 'rules' } : {} };
+  if (!r) return;
+  editing = { k, id: r.id };
+  $('#d-title').textContent = id ? (val(r, t.title) || 'Edit') : 'New ' + t.label.replace(/s$/, '').toLowerCase();
+  $('#b-del').hidden = !id || !!t.noDelete;
+  $('#form').innerHTML = t.fields.map(([f, type, hint, opts, max], i) => {
+    const v = r.fields[f], idf = 'fld' + i, h = hint ? '<div class="hint">' + esc(hint) + '</div>' : '';
+    if (type === 'bool') return '<div class="f inline"><label for="' + idf + '">' + esc(f) + (hint ? '<div class="hint">' + esc(hint) + '</div>' : '') + '</label><span class="sw"><input type="checkbox" id="' + idf + '" data-f="' + esc(f) + '" data-t="bool"' + (v ? ' checked' : '') + '><span></span></span></div>';
+    if (type === 'ro') { let s = Array.isArray(v) ? v.join(', ') : (v === true ? 'Yes' : v === false ? 'No' : (v == null || v === '' ? '—' : String(v))); if (/^\d{4}-\d\d-\d\dT/.test(s)) s = new Date(s).toLocaleString(); return '<div class="f"><div class="lab">' + esc(f) + '</div><div class="ro">' + esc(s) + '</div></div>'; }
+    if (type === 'long') return '<div class="f"><label for="' + idf + '">' + esc(f) + '</label><textarea id="' + idf + '" data-f="' + esc(f) + '" data-t="long" rows="' + (f === 'Parts' || f === 'Public reply variations' ? 6 : 3) + '">' + esc(v || '') + '</textarea>' + h + '</div>';
+    if (type === 'select') { const o = optionsFor(k, f, opts); return '<div class="f"><label for="' + idf + '">' + esc(f) + '</label><input type="text" id="' + idf + '" data-f="' + esc(f) + '" data-t="text" list="dl' + i + '" value="' + esc(v || '') + '" autocomplete="off"><datalist id="dl' + i + '">' + o.map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>' + h + '</div>'; }
+    if (type === 'multi') { const have = Array.isArray(v) ? v : []; const o = optionsFor(k, f, opts); return '<div class="f"><div class="lab">' + esc(f) + '</div><div class="chips" data-f="' + esc(f) + '" data-t="multi">' + o.map(x => '<label><input type="checkbox" value="' + esc(x) + '"' + (have.includes(x) ? ' checked' : '') + '>' + esc(x) + '</label>').join('') + '</div>' + h + '</div>'; }
+    if (type === 'tags') return '<div class="f"><label for="' + idf + '">' + esc(f) + '</label><input type="text" id="' + idf + '" data-f="' + esc(f) + '" data-t="tags" value="' + esc((v || []).join(', ')) + '">' + h + '</div>';
+    const it = type === 'url' ? 'url' : (type === 'number' || type === 'money') ? 'number' : type === 'date' ? 'date' : 'text';
+    return '<div class="f"><label for="' + idf + '">' + esc(f) + (max ? '<span class="count-chars" data-max="' + max + '"></span>' : '') + '</label><input type="' + it + '" id="' + idf + '" data-f="' + esc(f) + '" data-t="' + type + '"' + (it === 'number' ? ' step="any"' : '') + (max ? ' maxlength="' + max + '"' : '') + ' value="' + esc(v == null ? '' : v) + '">' + h + '</div>';
+  }).join('');
+  dirty = false;
+  $('#shade').hidden = false; $('#drawer').hidden = false;
+  const first = $('#form').querySelector('input:not([type=checkbox]), textarea'); if (first) first.focus();
+  counters();
+}
+function counters() { document.querySelectorAll('.count-chars').forEach(c => { const inp = c.closest('.f').querySelector('input'); c.textContent = inp.value.length + '/' + c.dataset.max; }); }
+$('#form').addEventListener('input', () => { dirty = true; counters(); });
+$('#form').addEventListener('submit', e => e.preventDefault());
+function collect() {
+  const out = {};
+  $('#form').querySelectorAll('[data-f]').forEach(el => {
+    const f = el.dataset.f, t = el.dataset.t;
+    if (t === 'bool') out[f] = el.checked;
+    else if (t === 'multi') out[f] = [...el.querySelectorAll('input:checked')].map(i => i.value);
+    else if (t === 'tags') out[f] = el.value.split(',').map(s => s.trim()).filter(Boolean);
+    else if (t === 'number' || t === 'money') out[f] = el.value === '' ? null : Number(el.value);
+    else out[f] = el.value.trim();
+  });
+  return out;
+}
+function close(force) {
+  if (!force && dirty && !confirm('Discard your changes?')) return;
+  $('#shade').hidden = true; $('#drawer').hidden = true; editing = null; dirty = false;
+}
+$('#b-close').addEventListener('click', () => close()); $('#b-cancel').addEventListener('click', () => close()); $('#shade').addEventListener('click', () => close());
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && editing) close(); if ((e.metaKey || e.ctrlKey) && e.key === 's' && editing) { e.preventDefault(); save(); } });
+async function save() {
+  const { k, id } = editing, t = T[k], fields = collect(), b = $('#b-save');
+  if (!t.search && !fields[t.title]) { toast(t.title + ' is required', true); return; }
+  b.disabled = true; b.textContent = 'Saving…';
+  const j = await api(id ? { action: 'save', table: k, id, fields } : { action: 'create', table: k, fields });
+  b.disabled = false; b.textContent = 'Save';
+  if (!j.ok) { toast(j.error || 'Could not save', true); return; }
+  const rec = (j.records || [])[0];
+  if (rec) { const list = DATA[k] || (DATA[k] = []); const i = list.findIndex(x => x.id === rec.id); if (i >= 0) list[i] = rec; else list.push(rec); }
+  if (t.site) setPending(true);
+  close(true); render(); toast('Saved' + (t.site ? '. Hit Publish when you are done.' : ''));
+}
+$('#b-save').addEventListener('click', save);
+$('#b-del').addEventListener('click', async () => {
+  const { k, id } = editing, r = DATA[k].find(x => x.id === id);
+  if (!confirm('Delete "' + val(r, T[k].title) + '"? This cannot be undone.')) return;
+  const j = await api({ action: 'delete', table: k, id });
+  if (!j.ok) { toast(j.error || 'Could not delete', true); return; }
+  DATA[k] = DATA[k].filter(x => x.id !== id); if (T[k].site) setPending(true); close(true); render(); toast('Deleted');
+});
+$('#b-add').addEventListener('click', () => edit(null));
+
+/* ---------- Publish ---------- */
+async function publish(btn) {
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Publishing…';
+  const j = await api({ action: 'publish' });
+  btn.disabled = false; btn.textContent = old;
+  if (!j.ok) { toast(j.error || 'Could not publish', true); return; }
+  setPending(false); toast('Publishing. Your changes will be on the site in a few minutes.');
+}
+$('#b-pub').addEventListener('click', e => publish(e.currentTarget)); $('#b-pub-m').addEventListener('click', e => publish(e.currentTarget));
+
+fetch('/api/auth/me').then(r => r.json()).then(m => { if (m && m.role === 'admin') start(m.email); else showLogin(); }).catch(showLogin);
+</script>
+</body>
+</html>

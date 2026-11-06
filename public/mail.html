@@ -162,10 +162,11 @@ async function unlock(p) {
   PASS = p; $('#gate-msg').textContent = 'Checking…'; $('#gate-msg').className = 'msg';
   const j = await api({ action: 'stats' }).catch(() => ({ error: 'Could not reach the server.' }));
   if (!j.ok) { $('#gate-msg').textContent = j.error || 'Wrong passphrase'; $('#gate-msg').className = 'msg bad'; return; }
-  store.set('mailpass', p); $('#gate').hidden = true; $('#app').hidden = false; showStats(j);
+  if (p) store.set('mailpass', p); $('#gate').hidden = true; $('#app').hidden = false; showStats(j);
 }
 $('#gate').addEventListener('submit', e => { e.preventDefault(); unlock($('#pass').value.trim()); });
-const saved = store.get('mailpass'); if (saved) { $('#pass').value = saved; unlock(saved); }
+const saved = store.get('mailpass');
+fetch('/api/auth/me').then(r => r.json()).then(m => { if (m && m.role === 'admin') { unlock(''); const g = document.querySelector('#gate'); if (g) g.hidden = true; } else if (saved) { $('#pass').value = saved; unlock(saved); } }).catch(() => { if (saved) { $('#pass').value = saved; unlock(saved); } });
 function preview() {
   const s = $('#subject').value.trim(), m = $('#message').value.trim(), bt = $('#btnText').value.trim() || 'Check it out', bu = $('#btnUrl').value.trim();
   if (!s && !m) { $('#preview').innerHTML = '<p style="color:#777">Start typing to see your email.</p>'; return; }
