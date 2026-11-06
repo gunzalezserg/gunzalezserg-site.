@@ -79,7 +79,7 @@ td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space
     <div class="grid">
       <div class="stats">
         <div class="stat"><small>Email list</small><b id="s-list">–</b></div>
-        <div class="stat"><small>Everyone with email</small><b id="s-all">–</b></div>
+        <div class="stat"><small>3D printing (STL)</small><b id="s-stl">–</b></div>
         <div class="stat"><small>Weekly digest</small><b id="s-weekly">–</b></div>
         <div class="stat"><small>Sent today</small><b id="s-today">–</b></div>
       </div>
@@ -90,7 +90,7 @@ td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space
           <label>Send to</label>
           <div class="aud">
             <label><input type="radio" name="aud" value="list" checked><span>Email list <span id="c-list"></span><small>People who signed up for my emails (EMAILS keyword or the website).</small></span></label>
-            <label><input type="radio" name="aud" value="all"><span>Everyone with an email <span id="c-all"></span><small>Email list plus everyone who gave an email in DMs (STL file people). Use this sparingly.</small></span></label>
+            <label><input type="radio" name="aud" value="stl"><span>3D printing people (STL) <span id="c-stl"></span><small>Everyone who gave an email in DMs to get a file. Only email them about 3D printing projects.</small></span></label>
           </div>
           <label for="subject">Subject</label>
           <input type="text" id="subject" maxlength="150" required>
@@ -126,6 +126,15 @@ td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space
         </table></div>
         <p class="hint">Opens are approximate: some email apps block the tracking image, and Apple Mail can count opens that never happened. Clicks are exact.</p>
       </div>
+      <form id="passform" class="card">
+        <h2>Change passphrase</h2>
+        <label for="newpass">New passphrase</label>
+        <input type="password" id="newpass" minlength="8" autocomplete="new-password" required>
+        <label for="newpass2">Type it again</label>
+        <input type="password" id="newpass2" minlength="8" autocomplete="new-password" required>
+        <div class="row"><button type="submit">Save new passphrase</button></div>
+        <p class="msg" id="pass-msg" role="status"></p>
+      </form>
     </div>
   </main>
 </div>
@@ -143,9 +152,9 @@ async function api(body) {
 }
 function showStats(j) {
   STATS = j;
-  $('#s-list').textContent = j.counts.list; $('#s-all').textContent = j.counts.all; $('#s-weekly').textContent = j.counts.weekly;
+  $('#s-list').textContent = j.counts.list; $('#s-stl').textContent = j.counts.stl; $('#s-weekly').textContent = j.counts.weekly;
   $('#s-today').textContent = j.sentToday + ' / ' + j.limit;
-  $('#c-list').textContent = '(' + j.counts.list + ')'; $('#c-all').textContent = '(' + j.counts.all + ')';
+  $('#c-list').textContent = '(' + j.counts.list + ')'; $('#c-stl').textContent = '(' + j.counts.stl + ')';
   const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
   $('#bc').innerHTML = (j.broadcasts || []).map(b => '<tr><td>' + esc(b.subject) + '</td><td>' + esc(b.type) + '</td><td class="n">' + b.sent + '</td><td class="n">' + b.opens + ' (' + pct(b.opens, b.sent) + ')</td><td class="n">' + b.clicks + ' (' + pct(b.clicks, b.sent) + ')</td><td class="n">' + (b.at ? new Date(b.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '') + '</td></tr>').join('') || '<tr><td colspan="6">Nothing sent yet.</td></tr>';
 }
@@ -186,6 +195,15 @@ $('#yes').addEventListener('click', async () => {
   $('#yes').disabled = false; $('#confirm').hidden = true; $('#send').hidden = false;
   if (j.ok) { say('Sending to ' + j.queued + ' people now. It takes a few minutes to go out. Opens and clicks show up below.', true); showStats(j); setTimeout(async () => { const s = await api({ action: 'stats' }); if (s.ok) showStats(s); }, 60000); }
   else say(j.error || 'Something went wrong.', false);
+});
+$('#passform').addEventListener('submit', async e => {
+  e.preventDefault();
+  const a = $('#newpass').value.trim(), b = $('#newpass2').value.trim(), m = $('#pass-msg');
+  if (a.length < 8) { m.textContent = 'Use at least 8 characters.'; m.className = 'msg bad'; return; }
+  if (a !== b) { m.textContent = 'Those don\u2019t match.'; m.className = 'msg bad'; return; }
+  const j = await api({ action: 'setpass', newPass: a }).catch(() => ({ error: 'Could not reach the server.' }));
+  if (j.ok && j.passChanged) { PASS = a; store.set('mailpass', a); m.textContent = 'Saved. Use the new passphrase from now on.'; m.className = 'msg ok'; e.target.reset(); }
+  else { m.textContent = j.error || 'Something went wrong.'; m.className = 'msg bad'; }
 });
 </script>
 </body>
