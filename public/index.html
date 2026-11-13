@@ -149,6 +149,7 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
 .fee .v { font: 900 34px/1 var(--display) } .fee .k { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
 .stars { color: var(--brass); letter-spacing: 2px; font-size: 16px } .stars i { color: var(--line); font-style: normal }
 .take { margin: 0; padding-left: 10px; border-left: 3px solid var(--brass) }
+.rgtags { display: flex; gap: 6px; flex-wrap: wrap } .rgfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; border-top: 1px dashed var(--line); border-bottom: 1px dashed var(--line); padding-block: 8px } .rgfacts b { display: block; font: 800 20px/1.1 var(--display); text-transform: uppercase }
 .shop .row2 { display: flex; gap: 8px; flex-wrap: wrap } .shop .row2 .btn { padding: 8px 12px; font-size: 13px }
 @media (max-width: 640px) { .show { grid-template-columns: 70px 1fr } .show .acts { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); min-width: 0 } .when .d { font-size: 22px } }
 </style>
@@ -168,6 +169,7 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
       <a href="#printing" id="nav-files">3D printing</a>
       <a href="#shows" id="nav-shows">Gun shows</a>
       <a href="#shops" id="nav-shops">Local shops</a>
+      <a href="#ranges" id="nav-ranges">Ranges</a>
     </nav>
   </header>
 
@@ -595,7 +597,7 @@ function renderShops() {
     const checked = s => s ? ymd(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
     $('#shoplist').innerHTML = list.map(s => `<article class="card shop">
       <span class="dk">${esc(s.city)}${s.range ? ' · Has a range' : ''}</span><h3>${esc(s.name)}</h3>${stars(s.rating)}
-      <div class="fee"><span class="v mono">${s.fee != null ? '$' + s.fee : 'Call'}</span><span class="k">FFL transfer</span></div>
+      <div class="fee"><span class="v mono"${s.fee == null ? ' style="font-size:22px"' : ''}>${s.fee != null ? '$' + s.fee : 'Call'}</span><span class="k">FFL transfer</span></div>
       ${s.feeDetails ? `<p class="fine" style="margin:0">${esc(s.feeDetails)}</p>` : ''}
       ${s.review ? `<p class="take">${esc(s.review)}</p>` : '<p class="fine" style="margin:0">My review is coming soon.</p>'}
       <div class="row2">${s.website ? `<a class="btn" href="${esc(s.website)}" target="_blank" rel="nofollow noopener">Website</a>` : ''}${s.address ? `<a class="btn ghost" href="${mapsUrl(s.name + ', ' + s.address)}" target="_blank" rel="noopener">Directions</a>` : ''}</div>
@@ -603,17 +605,42 @@ function renderShops() {
     </article>`).join('') || '<p class="note">Shop reviews are coming soon.</p>';
     document.querySelectorAll('#shopsort button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === sort)));
   };
-  $('#view').innerHTML = `<section class="files"><h1>Local gun shops</h1><p class="note" style="max-width:62ch">Bought a gun online? It has to ship to a shop with an FFL, and every shop charges its own transfer fee. Here's what DFW shops charge plus my honest take on each. Fees change, so call before you ship.</p></section>
+  $('#view').innerHTML = `<section class="files"><h1>Local gun shops</h1><p class="note" style="max-width:62ch">Bought a gun online? It has to ship to a shop with an FFL, and every shop charges its own transfer fee. These are DFW shops I like, what they charge, and my take on each. Fees change, so call before you ship.</p></section>
   <div class="seg" id="shopsort" style="margin-bottom:14px"><button data-s="fee" aria-pressed="true">Cheapest transfer</button><button data-s="rating" aria-pressed="false">My top rated</button></div>
   <div class="shops" id="shoplist"></div>`;
   document.querySelectorAll('#shopsort button').forEach(b => b.addEventListener('click', () => { sort = b.dataset.s; try { localStorage.setItem('shopsort', sort); } catch (e) {} draw(); }));
+  draw();
+}
+function renderRanges() {
+  setNav('nav-ranges');
+  const all = DATA.ranges || [];
+  let kind = 'all';
+  try { kind = localStorage.getItem('rangekind') || 'all'; } catch (e) {}
+  const stars = n => n ? `<span class="stars" aria-label="${n} out of 5">${'★'.repeat(n)}<i>${'★'.repeat(5 - n)}</i></span>` : '';
+  const draw = () => {
+    const list = all.filter(r => kind === 'all' || r.kind === kind || r.kind === 'Both');
+    $('#rangelist').innerHTML = list.map(r => `<article class="card shop">
+      <span class="dk">${esc(r.city)}${r.kind ? ' · ' + esc(r.kind) : ''}${r.shop ? ' · Gun shop too' : ''}</span><h3>${esc(r.name)}</h3>${stars(r.rating)}
+      ${(r.distance || r.price) ? `<div class="rgfacts">${r.distance ? `<div><span class="dk">Longest lane</span><b>${esc(r.distance)}</b></div>` : ''}${r.price ? `<div><span class="dk">Price</span><b>${esc(r.price)}</b></div>` : ''}</div>` : ''}
+      ${r.shoot.length ? `<div class="rgtags">${r.shoot.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>` : ''}
+      ${r.review ? `<p class="take">${esc(r.review)}</p>` : '<p class="fine" style="margin:0">My review is coming soon.</p>'}
+      ${r.rules ? `<p class="fine" style="margin:0"><b>Good to know:</b> ${esc(r.rules)}</p>` : ''}
+      <div class="row2">${r.website ? `<a class="btn" href="${esc(r.website)}" target="_blank" rel="nofollow noopener">Website</a>` : ''}${r.address ? `<a class="btn ghost" href="${mapsUrl(r.name + ', ' + r.address)}" target="_blank" rel="noopener">Directions</a>` : ''}</div>
+    </article>`).join('') || '<p class="note">No ranges in this filter yet.</p>';
+    document.querySelectorAll('#rangekind button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === kind)));
+  };
+  $('#view').innerHTML = `<section class="files"><h1>DFW gun ranges</h1><p class="note" style="max-width:62ch">The ranges I actually shoot at around Dallas–Fort Worth, what you can shoot there, and the rules worth knowing before you go. Rules and prices change, so check their site first.</p></section>
+  <div class="seg" id="rangekind" style="margin-bottom:14px"><button data-k="all" aria-pressed="true">All</button><button data-k="Indoor" aria-pressed="false">Indoor</button><button data-k="Outdoor" aria-pressed="false">Outdoor</button></div>
+  <div class="shops" id="rangelist"></div>
+  <p class="fine" style="margin-top:18px">Looking for a gun shop instead? See <a href="#shops">local shops and FFL fees</a>.</p>`;
+  document.querySelectorAll('#rangekind button').forEach(b => b.addEventListener('click', () => { kind = b.dataset.k; try { localStorage.setItem('rangekind', kind); } catch (e) {} draw(); }));
   draw();
 }
 function route() {
   const h = location.hash.slice(1);
   const it = DATA.items.find(x => x.slug === h);
   if (h.startsWith('p-')) { renderProduct(decodeURIComponent(h.slice(2))); return; }
-  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else if (h === 'shows') renderShows(); else if (h === 'shops' || h === 'stores') renderShops(); else renderTracker();
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else if (h === 'shows') renderShows(); else if (h === 'shops' || h === 'stores') renderShops(); else if (h === 'ranges' || h === 'range') renderRanges(); else renderTracker();
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
