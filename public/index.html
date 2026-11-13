@@ -180,6 +180,20 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
 .jump a b { font: 800 20px/1 var(--display); text-transform: uppercase }
 .jump a span { font-size: 13px; color: var(--muted) }
 @media (max-width: 760px) { .home-hero { grid-template-columns: 1fr } .feed { grid-template-columns: repeat(2, minmax(0, 1fr)) } .feat { grid-template-columns: 120px 1fr } .feat h2 { font-size: 22px } }
+.ptabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 18px 0 0; overflow-x: auto }
+.ptabs a { text-decoration: none; padding: 9px 14px; font: 600 14px var(--body); color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap }
+.ptabs a[aria-current] { color: var(--ink); border-bottom-color: var(--brass) }
+.spgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 16px }
+.sp { display: grid; gap: 10px; align-content: start; min-width: 0 }
+.sp h3 { font: 800 28px/1 var(--display); text-transform: uppercase; margin: 0 }
+.sp .rel { display: flex; gap: 6px; flex-wrap: wrap }
+.sp .sent { margin: 0; font-size: 14px } .sp .sent b { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 6px }
+.codebox { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px dashed var(--brass); border-radius: 6px; padding: 10px 12px; background: var(--brass-soft) }
+.codebox .c { font: 700 20px/1 var(--mono); letter-spacing: .08em; color: var(--ink) } .codebox small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px }
+.codebox button { font: 600 13px var(--body); border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 999px; padding: 7px 12px; cursor: pointer }
+.sp .row2 { display: flex; gap: 8px; flex-wrap: wrap } .sp .row2 .btn { padding: 8px 12px; font-size: 13px; width: auto }
+.pitch { margin-top: 26px; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 16px 18px; display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: center }
+.pitch b { font: 800 22px/1 var(--display); text-transform: uppercase }
 </style>
 </head>
 <body>
@@ -190,9 +204,8 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
     <nav aria-label="Main">
       <a href="#" id="nav-home">Latest</a>
       <a href="#tracker" id="nav-tracker">Prices</a>
-      <a href="#alerts" id="nav-alerts">Alerts</a>
-      <a href="#tools" id="nav-tools">Deal checker</a>
       <a href="#gear" id="nav-gear">Gear</a>
+      <a href="#sponsors" id="nav-sponsors">Sponsors</a>
       <a href="#builds" id="nav-builds">Builds</a>
       <a href="#printing" id="nav-files">3D printing</a>
       <a href="#shows" id="nav-shows">Gun shows</a>
@@ -414,7 +427,7 @@ function bindAlert() {
   });
 }
 function renderAlerts() {
-  setNav('nav-alerts');
+  setNav('nav-tracker');
   $('#view').innerHTML = `<section class="files"><h1>Price alerts</h1><p class="note" style="max-width:60ch">Pick a gun or caliber, or paste a UPC, and the price you'd buy at. When a deal at or under it shows up, you get an email. One click unsubscribes.</p></section><div class="card" style="max-width:520px">${alertForm({})}</div>`;
   bindAlert();
 }
@@ -526,7 +539,7 @@ function storeSearch(q, sel, opts) {
   }, (opts && opts.now) ? 0 : 350);
 }
 function renderTools() {
-  setNav('nav-tools');
+  setNav('nav-tracker');
   $('#view').innerHTML = `<section class="files"><h1>Is it a good deal?</h1><p class="note" style="max-width:60ch">Found a price somewhere? Check it against what I've tracked, and work out the real cost per round.</p></section>
   <div class="tools">
     <div class="card"><h2>Deal checker</h2>
@@ -704,11 +717,32 @@ function renderRanges() {
   document.querySelectorAll('#rangekind button').forEach(b => b.addEventListener('click', () => { kind = b.dataset.k; try { localStorage.setItem('rangekind', kind); } catch (e) {} draw(); }));
   draw();
 }
+function addPriceTabs(h) {
+  const k = h === 'alerts' ? 'alerts' : h === 'tools' ? 'tools' : 'tracker';
+  const tabs = [['tracker', 'Lowest prices'], ['alerts', 'Price alerts'], ['tools', 'Deal checker']];
+  $('#view').insertAdjacentHTML('afterbegin', `<nav class="ptabs" aria-label="Prices">${tabs.map(([id, l]) => `<a href="#${id}"${id === k ? ' aria-current="page"' : ''}>${l}</a>`).join('')}</nav>`);
+}
+function renderSponsors() {
+  setNav('nav-sponsors');
+  const list = DATA.sponsors || [];
+  $('#view').innerHTML = `<section class="files"><h1>Sponsors &amp; partners</h1><p class="note" style="max-width:62ch">Brands that have sent me gear, sponsor my builds, or set up a discount code for you. If there's a code, use it at checkout. Some links pay me a small commission at no extra cost to you.</p></section>
+  <div class="spgrid">${list.map((s, i) => `<article class="card sp">
+    ${s.rel.length ? `<div class="rel">${s.rel.map(r => `<span class="chip">${esc(r)}</span>`).join('')}</div>` : ''}
+    <h3>${esc(s.name)}</h3>
+    ${s.sent ? `<p class="sent"><b>Sent me</b>${esc(s.sent)}</p>` : ''}
+    ${s.code ? `<div class="codebox"><div><span class="c">${esc(s.code)}</span>${s.discount ? `<small>${esc(s.discount)}</small>` : ''}</div><button type="button" data-code="${esc(s.code)}">Copy code</button></div>` : (s.discount ? `<p class="sent"><b>Deal</b>${esc(s.discount)}</p>` : '')}
+    ${s.take ? `<p class="take">${esc(s.take)}</p>` : ''}
+    <div class="row2">${s.link ? `<a class="btn" href="${esc(s.link)}" target="_blank" rel="sponsored nofollow noopener">Shop ${esc(s.name)}</a>` : ''}${s.ig ? `<a class="btn ghost" href="https://www.instagram.com/${esc(s.ig)}/" target="_blank" rel="noopener">@${esc(s.ig)}</a>` : ''}</div>
+  </article>`).join('') || '<p class="note">Sponsors show up here once they\'re added.</p>'}</div>
+  <div class="pitch"><div><b>Want to work together?</b><p class="note" style="margin:4px 0 0">Brands, reach out for reviews, range days and builds.</p></div><a class="btn" href="mailto:gunzalezserg@gmail.com?subject=Working%20together" style="width:auto">Email me</a></div>`;
+  document.querySelectorAll('.codebox button').forEach(b => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(b.dataset.code); b.textContent = 'Copied ✓'; } catch (e) { b.textContent = b.dataset.code; } setTimeout(() => { b.textContent = 'Copy code'; }, 2000); }));
+}
 function route() {
   const h = location.hash.slice(1);
   const it = DATA.items.find(x => x.slug === h);
   if (h.startsWith('p-')) { renderProduct(decodeURIComponent(h.slice(2))); return; }
-  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'tracker' || h === 'prices') renderTracker(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else if (h === 'shows') renderShows(); else if (h === 'shops' || h === 'stores') renderShops(); else if (h === 'ranges' || h === 'range') renderRanges(); else renderHome();
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'tracker' || h === 'prices') renderTracker(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else if (h === 'shows') renderShows(); else if (h === 'shops' || h === 'stores') renderShops(); else if (h === 'ranges' || h === 'range') renderRanges(); else if (h === 'sponsors' || h === 'partners') renderSponsors(); else renderHome();
+  if (['tracker', 'prices', 'alerts', 'tools'].includes(h)) addPriceTabs(h);
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
