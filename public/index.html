@@ -104,6 +104,8 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
 .gcard, .bcard { display: grid; gap: 8px; align-content: start; min-width: 0 } .gcard p, .bcard p { margin: 0 }
 .code { font-size: 13px } .code b { color: var(--brass) }
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line) }
+:root .btn.ghost, :root:not([data-theme="light"]) .btn.ghost { color: var(--ink) }
+.btn.ghost:hover { border-color: var(--brass) }
 details summary { cursor: pointer; font-weight: 600; font-size: 14px; padding-block: 4px }
 .parts { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px }
 @media (max-width: 480px) { .af-row { grid-template-columns: 1fr } }
@@ -127,6 +129,28 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
 .signup .btn { min-height: 44px }
 .signup #su-msg { flex-basis: 100%; min-height: 1.2em }
 @media (max-width: 720px) { .signup { grid-template-columns: 1fr } }
+.showmonth { font: 800 24px/1 var(--display); text-transform: uppercase; margin: 26px 0 10px }
+.shows { display: grid; gap: 10px }
+.show { display: grid; grid-template-columns: 92px 1fr auto; gap: 16px; align-items: start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface) }
+.show.feat { border: 2px solid var(--brass) }
+.when { display: grid; justify-items: center; align-content: start; gap: 2px; padding: 8px 6px; border: 2px solid var(--ink); border-radius: 4px; text-align: center }
+.when .m { font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--brass) }
+.when .d { font: 900 26px/1 var(--display) }
+.when .w { font: 500 11px/1 var(--mono); color: var(--muted) }
+.show h3 { font: 800 22px/1.05 var(--display); text-transform: uppercase; margin: 0 0 4px }
+.show .meta { font-size: 14px; color: var(--muted); display: grid; gap: 2px } .show .meta b { color: var(--ink); font-weight: 600 }
+.show .acts { display: grid; gap: 6px; justify-items: stretch; min-width: 132px }
+.show .acts .btn { padding: 8px 12px; font-size: 13px }
+.soon { font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--down); margin-left: 6px }
+.shops { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px }
+.shop { display: grid; gap: 8px; align-content: start; min-width: 0 }
+.shop h3 { font: 800 22px/1.05 var(--display); text-transform: uppercase; margin: 0 }
+.fee { display: flex; align-items: baseline; gap: 8px; border-top: 1px dashed var(--line); border-bottom: 1px dashed var(--line); padding-block: 8px }
+.fee .v { font: 900 34px/1 var(--display) } .fee .k { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
+.stars { color: var(--brass); letter-spacing: 2px; font-size: 16px } .stars i { color: var(--line); font-style: normal }
+.take { margin: 0; padding-left: 10px; border-left: 3px solid var(--brass) }
+.shop .row2 { display: flex; gap: 8px; flex-wrap: wrap } .shop .row2 .btn { padding: 8px 12px; font-size: 13px }
+@media (max-width: 640px) { .show { grid-template-columns: 70px 1fr } .show .acts { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); min-width: 0 } .when .d { font-size: 22px } }
 </style>
 </head>
 <body>
@@ -142,6 +166,8 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
       <a href="#gear" id="nav-gear">Gear</a>
       <a href="#builds" id="nav-builds">Builds</a>
       <a href="#printing" id="nav-files">3D printing</a>
+      <a href="#shows" id="nav-shows">Gun shows</a>
+      <a href="#shops" id="nav-shops">Local shops</a>
     </nav>
   </header>
 
@@ -520,11 +546,74 @@ function renderFiles() {
   <div class="ggrid">${tips.map((t, i) => `<article class="card gcard"><span class="dk">Tip ${i + 1}</span><h3>${esc(t.tip)}</h3>${t.details ? `<p>${esc(t.details)}</p>` : ''}
     ${t.link ? `<a class="btn" href="${esc(t.link)}" target="_blank" rel="nofollow noopener">${esc(t.label)}</a>` : ''}</article>`).join('') || '<p class="note">Printing tips are coming soon.</p>'}</div>`;
 }
+function ymd(s) { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); }
+function mapsUrl(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
+function icsHref(sh) {
+  const d = s => String(s).replace(/-/g, '');
+  const e = ymd(sh.end); e.setDate(e.getDate() + 1);
+  const endS = e.getFullYear() + String(e.getMonth() + 1).padStart(2, '0') + String(e.getDate()).padStart(2, '0');
+  const clean = t => String(t || '').replace(/[,;\\]/g, m => '\\' + m).replace(/\n/g, ' ');
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//gunzalezserg//shows//EN', 'BEGIN:VEVENT', 'UID:' + d(sh.start) + '-' + sh.name.replace(/\W+/g, '') + '@gunzalezserg.com', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z', 'DTSTART;VALUE=DATE:' + d(sh.start), 'DTEND;VALUE=DATE:' + endS, 'SUMMARY:' + clean(sh.name), 'LOCATION:' + clean([sh.venue, sh.address || sh.city].filter(Boolean).join(', ')), 'DESCRIPTION:' + clean([sh.hours, sh.admission, sh.link].filter(Boolean).join(' | ')), 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+}
+function renderShows() {
+  setNav('nav-shows');
+  const shows = DATA.shows || [];
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const groups = [];
+  shows.forEach(sh => { const k = ymd(sh.start).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); let g = groups.find(x => x.k === k); if (!g) { g = { k, list: [] }; groups.push(g); } g.list.push(sh); });
+  const card = sh => {
+    const a = ymd(sh.start), b = ymd(sh.end);
+    const days = a.getMonth() === b.getMonth() ? a.getDate() + (b > a ? '–' + b.getDate() : '') : a.getDate() + '–' + MON[b.getMonth()] + ' ' + b.getDate();
+    const until = Math.round((a - now) / 864e5);
+    const live = now >= a && now <= b;
+    const tag = live ? '<span class="soon">This weekend</span>' : (until >= 0 && until <= 7 ? '<span class="soon">' + (until <= 1 ? 'Tomorrow' : 'In ' + until + ' days') + '</span>' : '');
+    const where = [sh.venue, sh.city].filter(Boolean).join(', ');
+    return `<article class="show${sh.featured ? ' feat' : ''}">
+      <div class="when"><span class="m">${MON[a.getMonth()]}</span><span class="d">${esc(days)}</span><span class="w">${DOW[a.getDay()]}${b > a ? '–' + DOW[b.getDay()] : ''}</span></div>
+      <div style="min-width:0"><h3>${esc(sh.name)}${tag}</h3>${sh.featured ? '<span class="chip">I\'ll be there</span>' : ''}
+        <div class="meta">${where ? `<span><b>${esc(where)}</b></span>` : ''}${sh.hours ? `<span>${esc(sh.hours)}</span>` : ''}${sh.admission ? `<span>Admission: ${esc(sh.admission)}</span>` : ''}${sh.promoter ? `<span>By ${esc(sh.promoter)}</span>` : ''}${sh.notes ? `<span>${esc(sh.notes)}</span>` : ''}</div></div>
+      <div class="acts">${sh.link ? `<a class="btn" href="${esc(sh.link)}" target="_blank" rel="nofollow noopener">Show info</a>` : ''}
+        <a class="btn ghost" href="${mapsUrl([sh.venue, sh.address || sh.city + ', TX'].filter(Boolean).join(', '))}" target="_blank" rel="noopener">Directions</a>
+        <a class="btn ghost" href="${icsHref(sh)}" download="${esc(sh.name.replace(/[^\w ]+/g, '').replace(/ +/g, '-'))}-${esc(sh.start)}.ics">Add to calendar</a></div>
+    </article>`;
+  };
+  $('#view').innerHTML = `<section class="files"><h1>DFW gun shows</h1><p class="note" style="max-width:62ch">Every gun show coming up around Dallas–Fort Worth, updated as new dates drop. Shows sometimes move or cancel, so tap Show info to confirm before you drive out.</p></section>
+  ${groups.map(g => `<h2 class="showmonth">${esc(g.k)}</h2><div class="shows">${g.list.map(card).join('')}</div>`).join('') || '<p class="note">No upcoming shows listed right now. Check back soon.</p>'}
+  <p class="fine" style="margin-top:18px">Know a DFW show that's missing? DM me <a href="https://www.instagram.com/gunzalezserg/" target="_blank" rel="noopener">@gunzalezserg</a>.</p>`;
+}
+function renderShops() {
+  setNav('nav-shops');
+  const all = DATA.stores || [];
+  let sort = 'fee';
+  try { sort = localStorage.getItem('shopsort') || 'fee'; } catch (e) {}
+  const draw = () => {
+    const list = all.slice().sort((a, b) => sort === 'fee' ? ((a.fee ?? 999) - (b.fee ?? 999)) : ((b.rating || 0) - (a.rating || 0)));
+    const stars = n => n ? `<span class="stars" aria-label="${n} out of 5">${'★'.repeat(n)}<i>${'★'.repeat(5 - n)}</i></span>` : '';
+    const checked = s => s ? ymd(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    $('#shoplist').innerHTML = list.map(s => `<article class="card shop">
+      <span class="dk">${esc(s.city)}${s.range ? ' · Has a range' : ''}</span><h3>${esc(s.name)}</h3>${stars(s.rating)}
+      <div class="fee"><span class="v mono">${s.fee != null ? '$' + s.fee : 'Call'}</span><span class="k">FFL transfer</span></div>
+      ${s.feeDetails ? `<p class="fine" style="margin:0">${esc(s.feeDetails)}</p>` : ''}
+      ${s.review ? `<p class="take">${esc(s.review)}</p>` : '<p class="fine" style="margin:0">My review is coming soon.</p>'}
+      <div class="row2">${s.website ? `<a class="btn" href="${esc(s.website)}" target="_blank" rel="nofollow noopener">Website</a>` : ''}${s.address ? `<a class="btn ghost" href="${mapsUrl(s.name + ', ' + s.address)}" target="_blank" rel="noopener">Directions</a>` : ''}</div>
+      ${s.feeChecked ? `<p class="fine" style="margin:0">Fee checked ${esc(checked(s.feeChecked))}${s.feeSource ? ` · <a href="${esc(s.feeSource)}" target="_blank" rel="nofollow noopener">source</a>` : ''}</p>` : ''}
+    </article>`).join('') || '<p class="note">Shop reviews are coming soon.</p>';
+    document.querySelectorAll('#shopsort button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === sort)));
+  };
+  $('#view').innerHTML = `<section class="files"><h1>Local gun shops</h1><p class="note" style="max-width:62ch">Bought a gun online? It has to ship to a shop with an FFL, and every shop charges its own transfer fee. Here's what DFW shops charge plus my honest take on each. Fees change, so call before you ship.</p></section>
+  <div class="seg" id="shopsort" style="margin-bottom:14px"><button data-s="fee" aria-pressed="true">Cheapest transfer</button><button data-s="rating" aria-pressed="false">My top rated</button></div>
+  <div class="shops" id="shoplist"></div>`;
+  document.querySelectorAll('#shopsort button').forEach(b => b.addEventListener('click', () => { sort = b.dataset.s; try { localStorage.setItem('shopsort', sort); } catch (e) {} draw(); }));
+  draw();
+}
 function route() {
   const h = location.hash.slice(1);
   const it = DATA.items.find(x => x.slug === h);
   if (h.startsWith('p-')) { renderProduct(decodeURIComponent(h.slice(2))); return; }
-  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else renderTracker();
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'videos') renderVideos(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else if (h === 'shows') renderShows(); else if (h === 'shops' || h === 'stores') renderShops(); else renderTracker();
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
