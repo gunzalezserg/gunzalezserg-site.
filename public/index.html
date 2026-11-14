@@ -194,6 +194,17 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
 .sp .row2 { display: flex; gap: 8px; flex-wrap: wrap } .sp .row2 .btn { padding: 8px 12px; font-size: 13px; width: auto }
 .pitch { margin-top: 26px; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 16px 18px; display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: center }
 .pitch b { font: 800 22px/1 var(--display); text-transform: uppercase }
+.pfilter { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px }
+.pfilter button { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer }
+.pfilter button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.promo { display: grid; gap: 9px; align-content: start; min-width: 0 }
+.promo .brandline { font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
+.promo h3 { font: 700 18px/1.25 var(--body); margin: 0 }
+.promo .val { font: 800 30px/1 var(--display); text-transform: uppercase; color: var(--brass) }
+.promo .dates { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted) } .promo .dates b { color: var(--ink); font-weight: 600 }
+.promo .soon { color: #e0655a; font-weight: 700 }
+.promo .det { margin: 0; font-size: 14px }
+.promo .chk { font-size: 12px; color: var(--muted); margin: 0 }
 </style>
 </head>
 <body>
@@ -205,6 +216,7 @@ a.go { font: 600 13px var(--body); color: var(--brass); text-decoration: none; w
       <a href="#" id="nav-home">Latest</a>
       <a href="#tracker" id="nav-tracker">Prices</a>
       <a href="#gear" id="nav-gear">Gear</a>
+      <a href="#coupons" id="nav-coupons">Coupons &amp; rebates</a>
       <a href="#sponsors" id="nav-sponsors">Sponsors</a>
       <a href="#builds" id="nav-builds">Builds</a>
       <a href="#printing" id="nav-files">3D printing</a>
@@ -477,6 +489,7 @@ function renderHome() {
   <div class="feed" id="feed"></div><div class="more" id="more"></div>
   <div class="jump">
     <a href="#tracker"><b>Gun &amp; ammo prices</b><span>Lowest prices, checked nightly</span></a>
+    <a href="#coupons"><b>Coupons &amp; rebates</b><span>${(DATA.promos || []).length} running now</span></a>
     <a href="#shows"><b>DFW gun shows</b><span>When and where</span></a>
     <a href="#shops"><b>Local shops</b><span>FFL fees and my reviews</span></a>
     <a href="#ranges"><b>Ranges</b><span>Where I shoot</span></a>
@@ -739,11 +752,45 @@ function renderSponsors() {
   <div class="pitch"><div><b>Want to work together?</b><p class="note" style="margin:4px 0 0">Brands, reach out for reviews, range days and builds.</p></div><a class="btn" href="mailto:gunzalezserg@gmail.com?subject=Working%20together" style="width:auto">Email me</a></div>`;
   document.querySelectorAll('.codebox button').forEach(b => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(b.dataset.code); b.textContent = 'Copied ✓'; } catch (e) { b.textContent = b.dataset.code; } setTimeout(() => { b.textContent = 'Copy code'; }, 2000); }));
 }
+function renderPromos() {
+  setNav('nav-coupons');
+  const list = (DATA.promos || []).slice();
+  const day = s => new Date(s + 'T12:00:00');
+  const fmt = s => s ? day(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  const left = s => { if (!s) return null; const t = new Date(); t.setHours(12, 0, 0, 0); return Math.round((day(s) - t) / 864e5); };
+  const KINDS = [['all', 'All'], ['Rebate', 'Rebates'], ['Coupon code', 'Coupon codes'], ['Free gear with purchase', 'Free gear'], ['Sale', 'Sales']];
+  let pick = 'all';
+  try { pick = localStorage.getItem('promokind') || 'all'; } catch (e) {}
+  if (!KINDS.some(k => k[0] === pick)) pick = 'all';
+  const card = p => { const d = left(p.ends); return `<article class="card promo">
+    <div class="rel"><span class="chip">${esc(p.kind)}</span>${p.cat ? `<span class="chip">${esc(p.cat)}</span>` : ''}</div>
+    ${p.brand ? `<span class="brandline">${esc(p.brand)}</span>` : ''}
+    <h3>${esc(p.title)}</h3>
+    ${p.value ? `<span class="val">${esc(p.value)}</span>` : ''}
+    ${p.code ? `<div class="codebox"><div><span class="c">${esc(p.code)}</span><small>Use at checkout</small></div><button type="button" data-code="${esc(p.code)}">Copy code</button></div>` : ''}
+    ${p.details ? `<p class="det">${esc(p.details)}</p>` : ''}
+    <div class="dates">${p.ends ? `<span>Buy by <b>${fmt(p.ends)}</b>${d != null && d <= 7 ? ` <span class="soon">· ${d <= 0 ? 'last day' : d + ' day' + (d > 1 ? 's' : '') + ' left'}</span>` : ''}</span>` : '<span>No end date listed</span>'}${p.claimBy ? `<span>Submit claim by <b>${fmt(p.claimBy)}</b></span>` : ''}</div>
+    ${p.link ? `<a class="btn" href="${esc(p.link)}" target="_blank" rel="nofollow noopener" style="width:auto;justify-self:start">${p.kind === 'Coupon code' || p.kind === 'Sale' ? 'Get the deal' : 'Rebate details'}</a>` : ''}
+    ${p.checked ? `<p class="chk">Checked ${fmt(p.checked)}${p.auto ? ' · found in the deal feeds' : ''}</p>` : ''}
+  </article>`; };
+  const draw = () => {
+    const shown = list.filter(p => pick === 'all' || p.kind === pick).sort((a, b) => String(a.ends || '9999').localeCompare(String(b.ends || '9999')));
+    $('#promoGrid').innerHTML = shown.map(card).join('') || '<p class="note">Nothing in this group right now. Check back soon.</p>';
+    document.querySelectorAll('.pfilter button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === pick)));
+    document.querySelectorAll('#promoGrid .codebox button').forEach(b => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(b.dataset.code); b.textContent = 'Copied ✓'; } catch (e) { b.textContent = b.dataset.code; } setTimeout(() => { b.textContent = 'Copy code'; }, 2000); }));
+  };
+  $('#view').innerHTML = `<section class="files"><h1>Coupons &amp; rebates</h1><p class="note" style="max-width:64ch">Manufacturer rebates, free-gear promos and coupon codes running right now on guns, ammo, optics and accessories. Ending soonest is first. Rebates usually need your receipt and the gun's serial number, so keep both. Always check the brand's page for which models qualify before you buy.</p></section>
+  <div class="pfilter" role="group" aria-label="Filter">${KINDS.map(([k, l]) => `<button type="button" data-k="${k}">${l}</button>`).join('')}</div>
+  <div class="spgrid" id="promoGrid"></div>
+  <div class="pitch"><div><b>Know a deal I missed?</b><p class="note" style="margin:4px 0 0">Send it my way and I'll add it.</p></div><a class="btn" href="https://ig.me/m/gunzalezserg" target="_blank" rel="noopener" style="width:auto">DM me</a></div>`;
+  document.querySelectorAll('.pfilter button').forEach(b => b.addEventListener('click', () => { pick = b.dataset.k; try { localStorage.setItem('promokind', pick); } catch (e) {} draw(); }));
+  draw();
+}
 function route() {
   const h = location.hash.slice(1);
   const it = DATA.items.find(x => x.slug === h);
   if (h.startsWith('p-')) { renderProduct(decodeURIComponent(h.slice(2))); return; }
-  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'tracker' || h === 'prices') renderTracker(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else if (h === 'shows') renderShows(); else if (h === 'shops' || h === 'stores') renderShops(); else if (h === 'ranges' || h === 'range') renderRanges(); else if (h === 'sponsors' || h === 'partners') renderSponsors(); else renderHome();
+  if (it) renderItem(it); else if (h === 'alerts') renderAlerts(); else if (h === 'files' || h === 'printing') renderFiles(); else if (h === 'tools') renderTools(); else if (h === 'tracker' || h === 'prices') renderTracker(); else if (h === 'gear') renderGear(); else if (h === 'builds') renderBuilds(); else if (h === 'shows') renderShows(); else if (h === 'shops' || h === 'stores') renderShops(); else if (h === 'ranges' || h === 'range') renderRanges(); else if (h === 'sponsors' || h === 'partners') renderSponsors(); else if (h === 'coupons' || h === 'rebates' || h === 'promos') renderPromos(); else renderHome();
   if (['tracker', 'prices', 'alerts', 'tools'].includes(h)) addPriceTabs(h);
   window.scrollTo(0, 0);
 }
