@@ -725,7 +725,7 @@ function addPriceTabs(h) {
 function renderSponsors() {
   setNav('nav-sponsors');
   const list = DATA.sponsors || [];
-  $('#view').innerHTML = `<section class="files"><h1>Sponsors &amp; partners</h1><p class="note" style="max-width:62ch">Brands that have sent me gear, sponsor my builds, or set up a discount code for you. If there's a code, use it at checkout. Some links pay me a small commission at no extra cost to you.</p></section>
+  $('#view').innerHTML = `<section class="files"><h1>Sponsors &amp; partners</h1><p class="note" style="max-width:62ch">These brands either send me products for free or at a discounted rate. If there's a code, use it at checkout. Some links pay me a small commission at no extra cost to you.</p></section>
   <div class="spgrid">${list.map((s, i) => `<article class="card sp">
     ${s.rel.length ? `<div class="rel">${s.rel.map(r => `<span class="chip">${esc(r)}</span>`).join('')}</div>` : ''}
     <h3>${esc(s.name)}</h3>
