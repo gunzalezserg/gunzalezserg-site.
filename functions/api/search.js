@@ -21,6 +21,7 @@ export async function onRequestGet({ request, env }) {
     args = [since];
     for (const t of toks) { sql += ' AND norm LIKE ?'; args.push('% ' + t + ' %'); }
   }
+  sql += ' AND price > 0';
   if (cat) { sql += ' AND category = ?'; args.push(cat); }
   sql += ' ORDER BY (cpr IS NULL), cpr, price LIMIT 60';
   try {
