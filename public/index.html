@@ -510,7 +510,7 @@ function renderHome() {
 function renderGear() {
   setNav('nav-gear');
   const gear = (DATA.gear || []);
-  const ORDER = ['Pistols', 'Rifles', 'Shotguns', 'Suppressors', 'Magazines', 'Pistol accessories', 'Rifle accessories', 'Optics', 'Lights', 'Holsters', 'Ear pro', 'Range gear', 'Targets', 'Cleaning', 'Cameras', 'Everyday carry'];
+  const ORDER = ['Pistols', 'Rifles', 'Shotguns', 'Suppressors', 'Red dots', 'Magazines', 'Pistol accessories', 'Rifle accessories', 'Optics', 'Lights', 'Holsters', 'Ear pro', 'Range gear', 'Targets', 'Cleaning', 'Cameras', 'Everyday carry'];
   const rank = c => { const i = ORDER.indexOf(c); return i < 0 ? 99 : i; };
   const cats = [...new Set(gear.map(g => g.category || 'Other'))].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
   $('#view').innerHTML = `<section class="files"><h1>Gear I use</h1><p class="note" style="max-width:60ch">The stuff I actually run, with my reviews and unboxings. Some links are affiliate links, so buying through them supports the channel at no extra cost to you.</p></section>
